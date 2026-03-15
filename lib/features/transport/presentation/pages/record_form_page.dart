@@ -477,7 +477,7 @@ class _RecordFormPageState extends State<RecordFormPage> {
           hintStyle:
               AppTextStyles.tableCell.copyWith(color: AppColors.textTertiary),
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
           isDense: true,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(4),

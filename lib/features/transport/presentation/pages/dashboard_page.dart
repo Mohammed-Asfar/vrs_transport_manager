@@ -11,6 +11,7 @@ import 'package:vrs_transport_manager/features/transport/domain/entities/transpo
 import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_bloc.dart';
 import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_event.dart';
 import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_state.dart';
+import 'package:vrs_transport_manager/core/services/update_checker_service.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -26,6 +27,9 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     context.read<TransportBloc>().add(const TransportLoadRecords());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateCheckerService().checkForUpdates(context);
+    });
   }
 
   @override
@@ -50,8 +54,8 @@ class _DashboardPageState extends State<DashboardPage> {
   /// macOS Finder-style toolbar.
   Widget _buildToolbar() {
     return Container(
-      height: 52,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: const BoxDecoration(
         color: AppColors.toolbar,
         border: Border(
@@ -62,7 +66,7 @@ class _DashboardPageState extends State<DashboardPage> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(5),
-            child: Image.asset('assets/logo_512.png', width: 24, height: 24),
+            child: Image.asset('assets/logo_512.png', width: 32, height: 32),
           ),
           const SizedBox(width: 8),
           Text(
@@ -74,11 +78,16 @@ class _DashboardPageState extends State<DashboardPage> {
             style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
           ),
           const Spacer(),
+          Text(
+            'Developed by Asfar',
+            style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
+          ),
+          const SizedBox(width: 16),
 
           // Search
           SizedBox(
-            width: 260,
-            height: 28,
+            width: 280,
+            height: 36,
             child: TextField(
               controller: _searchController,
               style: AppTextStyles.body,
@@ -92,7 +101,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       size: 16, color: AppColors.textTertiary),
                 ),
                 prefixIconConstraints:
-                    const BoxConstraints(minWidth: 28, minHeight: 28),
+                    const BoxConstraints(minWidth: 32, minHeight: 36),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? GestureDetector(
                         onTap: () {
@@ -149,10 +158,10 @@ class _DashboardPageState extends State<DashboardPage> {
 
           // New Record
           SizedBox(
-            height: 28,
+            height: 36,
             child: ElevatedButton.icon(
               onPressed: () => context.push('/create'),
-              icon: const Icon(Icons.add, size: 16),
+              icon: const Icon(Icons.add, size: 18),
               label: const Text('New Record'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -164,11 +173,11 @@ class _DashboardPageState extends State<DashboardPage> {
 
           // Sign Out
           SizedBox(
-            width: 28,
-            height: 28,
+            width: 36,
+            height: 36,
             child: IconButton(
               padding: EdgeInsets.zero,
-              iconSize: 16,
+              iconSize: 20,
               icon: const Icon(Icons.logout_rounded,
                   color: AppColors.textSecondary),
               tooltip: 'Sign Out',
@@ -296,8 +305,8 @@ class _DashboardPageState extends State<DashboardPage> {
       children: [
         // Column header
         Container(
-          height: 28,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           decoration: const BoxDecoration(
             color: AppColors.surfaceSecondary,
             border: Border(
@@ -307,7 +316,7 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Row(
             children: [
               SizedBox(
-                  width: 56,
+                  width: 70,
                   child: Text('Date', style: AppTextStyles.tableHeader)),
               const SizedBox(width: 16),
               Expanded(
@@ -329,8 +338,8 @@ class _DashboardPageState extends State<DashboardPage> {
 
         // Status bar
         Container(
-          height: 24,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          height: 30,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           decoration: const BoxDecoration(
             color: AppColors.toolbar,
             border: Border(
@@ -435,8 +444,8 @@ class _FinderRowState extends State<_FinderRow> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           decoration: BoxDecoration(
             color: _hovered ? AppColors.accentLight : AppColors.surface,
             border: widget.isLast
@@ -450,10 +459,10 @@ class _FinderRowState extends State<_FinderRow> {
             children: [
               // Date
               SizedBox(
-                width: 56,
+                width: 70,
                 child: Text(
                   '${widget.record.date.day.toString().padLeft(2, '0')} ${_monthName(widget.record.date.month)}',
-                  style: AppTextStyles.body
+                  style: AppTextStyles.subtitle
                       .copyWith(fontWeight: FontWeight.w500),
                 ),
               ),
@@ -465,7 +474,7 @@ class _FinderRowState extends State<_FinderRow> {
                 child: Text(
                   widget.record.location,
                   style:
-                      AppTextStyles.body.copyWith(fontWeight: FontWeight.w500),
+                      AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.w500),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -475,7 +484,7 @@ class _FinderRowState extends State<_FinderRow> {
                 flex: 2,
                 child: Text(
                   '${widget.record.trips.length} vehicle(s) · ${widget.record.totalLoads} loads',
-                  style: AppTextStyles.bodySmall,
+                  style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -485,7 +494,7 @@ class _FinderRowState extends State<_FinderRow> {
                 width: 100,
                 child: Text(
                   '₹${widget.record.balance.toStringAsFixed(0)}',
-                  style: AppTextStyles.body.copyWith(
+                  style: AppTextStyles.subtitle.copyWith(
                     fontWeight: FontWeight.w600,
                     color: widget.record.balance >= 0
                         ? AppColors.success
@@ -498,17 +507,17 @@ class _FinderRowState extends State<_FinderRow> {
 
               // Context menu
               SizedBox(
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 child: PopupMenuButton<String>(
                   padding: EdgeInsets.zero,
-                  iconSize: 16,
+                  iconSize: 20,
                   icon: Icon(
                     Icons.more_horiz,
                     color: _hovered
                         ? AppColors.textSecondary
                         : AppColors.textTertiary,
-                    size: 16,
+                    size: 20,
                   ),
                   onSelected: (value) {
                     switch (value) {
@@ -541,11 +550,11 @@ class _FinderRowState extends State<_FinderRow> {
       {Color? color}) {
     return PopupMenuItem(
       value: value,
-      height: 32,
+      height: 40,
       child: Row(
         children: [
-          Icon(icon, size: 16, color: color ?? AppColors.textSecondary),
-          const SizedBox(width: 8),
+          Icon(icon, size: 18, color: color ?? AppColors.textSecondary),
+          const SizedBox(width: 10),
           Text(label,
               style: AppTextStyles.body
                   .copyWith(color: color ?? AppColors.textPrimary)),

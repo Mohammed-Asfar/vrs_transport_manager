@@ -45,6 +45,7 @@ dependencies:
   printing: ^5.14.2
   intl: ^0.20.2
   equatable: ^2.0.8
+  url_launcher: ^6.2.5
 
 dev_dependencies:
   flutter_test:
