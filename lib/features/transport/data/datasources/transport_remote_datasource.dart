@@ -24,6 +24,15 @@ class TransportRemoteDatasource {
     }
   }
 
+  Stream<List<TransportRecordModel>> watchRecords() {
+    return _collection
+        .orderBy(FirestoreConstants.date, descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => TransportRecordModel.fromFirestore(doc))
+            .toList());
+  }
+
   Future<TransportRecordModel> getRecordById(String id) async {
     try {
       final doc = await _collection.doc(id).get();

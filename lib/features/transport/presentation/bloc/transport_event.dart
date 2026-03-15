@@ -47,3 +47,11 @@ class TransportSearchRecords extends TransportEvent {
 class TransportClearSearch extends TransportEvent {
   const TransportClearSearch();
 }
+
+class TransportRecordsUpdated extends TransportEvent {
+  final List<TransportRecord> records;
+  const TransportRecordsUpdated(this.records);
+
+  @override
+  List<Object?> get props => [records];
+}

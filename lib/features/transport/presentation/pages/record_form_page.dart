@@ -5,6 +5,7 @@ import 'package:vrs_transport_manager/core/theme/app_colors.dart';
 import 'package:vrs_transport_manager/core/theme/app_text_styles.dart';
 import 'package:vrs_transport_manager/core/utils/date_formatter.dart';
 import 'package:vrs_transport_manager/core/widgets/app_text_field.dart';
+import 'package:vrs_transport_manager/core/widgets/loading_overlay.dart';
 import 'package:vrs_transport_manager/features/transport/domain/entities/transport_record.dart';
 import 'package:vrs_transport_manager/features/transport/domain/entities/trip_entry.dart';
 import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_bloc.dart';
@@ -145,7 +146,7 @@ class _RecordFormPageState extends State<RecordFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<TransportBloc, TransportState>(
+    return BlocConsumer<TransportBloc, TransportState>(
       listener: (context, state) {
         if (state is TransportOperationSuccess) {
           context.pop();
@@ -160,7 +161,10 @@ class _RecordFormPageState extends State<RecordFormPage> {
           );
         }
       },
-      child: Scaffold(
+      builder: (context, state) => LoadingOverlay(
+        isLoading: state is TransportLoading,
+        message: _isEditing ? 'Updating record...' : 'Saving record...',
+        child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
           title: Text(_isEditing ? 'Edit Record' : 'New Transport Record'),
@@ -204,6 +208,7 @@ class _RecordFormPageState extends State<RecordFormPage> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

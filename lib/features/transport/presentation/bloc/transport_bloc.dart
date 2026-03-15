@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:vrs_transport_manager/features/transport/domain/repositories/transport_repository.dart';
 import 'package:vrs_transport_manager/features/transport/domain/usecases/transport_usecases.dart';
 import 'transport_event.dart';
 import 'transport_state.dart';
@@ -9,6 +11,8 @@ class TransportBloc extends Bloc<TransportEvent, TransportState> {
   final UpdateRecordUseCase _updateRecord;
   final DeleteRecordUseCase _deleteRecord;
   final SearchRecordsUseCase _searchRecords;
+  final TransportRepository _repository;
+  StreamSubscription? _recordsSubscription;
 
   TransportBloc({
     required GetRecordsUseCase getRecords,
@@ -16,13 +20,16 @@ class TransportBloc extends Bloc<TransportEvent, TransportState> {
     required UpdateRecordUseCase updateRecord,
     required DeleteRecordUseCase deleteRecord,
     required SearchRecordsUseCase searchRecords,
+    required TransportRepository repository,
   })  : _getRecords = getRecords,
         _createRecord = createRecord,
         _updateRecord = updateRecord,
         _deleteRecord = deleteRecord,
         _searchRecords = searchRecords,
+        _repository = repository,
         super(const TransportInitial()) {
     on<TransportLoadRecords>(_onLoadRecords);
+    on<TransportRecordsUpdated>(_onRecordsUpdated);
     on<TransportCreateRecord>(_onCreateRecord);
     on<TransportUpdateRecord>(_onUpdateRecord);
     on<TransportDeleteRecord>(_onDeleteRecord);
@@ -35,11 +42,32 @@ class TransportBloc extends Bloc<TransportEvent, TransportState> {
     Emitter<TransportState> emit,
   ) async {
     emit(const TransportLoading());
+
+    // Fetch initial data
     final result = await _getRecords();
     result.fold(
       (failure) => emit(TransportError(failure.message)),
       (records) => emit(TransportLoaded(records: records)),
     );
+
+    // Start listening for real-time updates
+    await _recordsSubscription?.cancel();
+    _recordsSubscription = _repository.watchRecords().listen(
+      (records) => add(TransportRecordsUpdated(records)),
+      onError: (_) {}, // Silently handle stream errors; initial fetch already loaded data
+    );
+  }
+
+  void _onRecordsUpdated(
+    TransportRecordsUpdated event,
+    Emitter<TransportState> emit,
+  ) {
+    // Only update if not in a search state
+    final currentState = state;
+    if (currentState is TransportLoaded && currentState.isSearchResult) {
+      return;
+    }
+    emit(TransportLoaded(records: event.records));
   }
 
   Future<void> _onCreateRecord(
@@ -48,18 +76,11 @@ class TransportBloc extends Bloc<TransportEvent, TransportState> {
   ) async {
     emit(const TransportLoading());
     final result = await _createRecord(event.record);
-    await result.fold(
-      (failure) async => emit(TransportError(failure.message)),
-      (_) async {
-        emit(const TransportOperationSuccess('Record created successfully'));
-        // Reload records
-        final loadResult = await _getRecords();
-        loadResult.fold(
-          (failure) => emit(TransportError(failure.message)),
-          (records) => emit(TransportLoaded(records: records)),
-        );
-      },
+    result.fold(
+      (failure) => emit(TransportError(failure.message)),
+      (_) => emit(const TransportOperationSuccess('Record created successfully')),
     );
+    // Stream will auto-update the list
   }
 
   Future<void> _onUpdateRecord(
@@ -68,16 +89,9 @@ class TransportBloc extends Bloc<TransportEvent, TransportState> {
   ) async {
     emit(const TransportLoading());
     final result = await _updateRecord(event.record);
-    await result.fold(
-      (failure) async => emit(TransportError(failure.message)),
-      (_) async {
-        emit(const TransportOperationSuccess('Record updated successfully'));
-        final loadResult = await _getRecords();
-        loadResult.fold(
-          (failure) => emit(TransportError(failure.message)),
-          (records) => emit(TransportLoaded(records: records)),
-        );
-      },
+    result.fold(
+      (failure) => emit(TransportError(failure.message)),
+      (_) => emit(const TransportOperationSuccess('Record updated successfully')),
     );
   }
 
@@ -87,16 +101,9 @@ class TransportBloc extends Bloc<TransportEvent, TransportState> {
   ) async {
     emit(const TransportLoading());
     final result = await _deleteRecord(event.id);
-    await result.fold(
-      (failure) async => emit(TransportError(failure.message)),
-      (_) async {
-        emit(const TransportOperationSuccess('Record deleted successfully'));
-        final loadResult = await _getRecords();
-        loadResult.fold(
-          (failure) => emit(TransportError(failure.message)),
-          (records) => emit(TransportLoaded(records: records)),
-        );
-      },
+    result.fold(
+      (failure) => emit(TransportError(failure.message)),
+      (_) => emit(const TransportOperationSuccess('Record deleted successfully')),
     );
   }
 
@@ -126,5 +133,11 @@ class TransportBloc extends Bloc<TransportEvent, TransportState> {
     Emitter<TransportState> emit,
   ) async {
     add(const TransportLoadRecords());
+  }
+
+  @override
+  Future<void> close() {
+    _recordsSubscription?.cancel();
+    return super.close();
   }
 }

@@ -75,6 +75,7 @@ Future<void> initDependencies() async {
       updateRecord: sl<UpdateRecordUseCase>(),
       deleteRecord: sl<DeleteRecordUseCase>(),
       searchRecords: sl<SearchRecordsUseCase>(),
+      repository: sl<TransportRepository>(),
     ),
   );
 }

@@ -53,6 +53,9 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 add_subdirectory("runner")
 
 
+# Allow older cmake_minimum_required in dependency CMake files (e.g. Firebase C++ SDK).
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
 include(flutter/generated_plugins.cmake)

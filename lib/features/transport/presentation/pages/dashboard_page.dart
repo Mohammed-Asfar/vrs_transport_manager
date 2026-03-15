@@ -92,15 +92,6 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-            tooltip: 'Refresh',
-            onPressed: () {
-              _searchController.clear();
-              context.read<TransportBloc>().add(const TransportLoadRecords());
-            },
-          ),
-          const SizedBox(width: 8),
-          IconButton(
             icon: const Icon(Icons.logout_rounded, color: Colors.white),
             tooltip: 'Logout',
             onPressed: () async {

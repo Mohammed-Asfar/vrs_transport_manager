@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vrs_transport_manager/features/auth/domain/usecases/login_usecase.dart';
 import 'package:vrs_transport_manager/features/auth/domain/usecases/logout_usecase.dart';
@@ -10,7 +9,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginUseCase _loginUseCase;
   final LogoutUseCase _logoutUseCase;
   final AuthRepository _authRepository;
-  StreamSubscription? _authSubscription;
 
   AuthBloc({
     required LoginUseCase loginUseCase,
@@ -31,20 +29,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(const AuthLoading());
 
-    final currentUser = _authRepository.currentUser;
-    if (currentUser != null) {
-      emit(AuthAuthenticated(currentUser));
-    } else {
-      emit(const AuthUnauthenticated());
+    // On Windows, Firebase C++ SDK may not have restored the session yet.
+    // Wait briefly then check, and also listen for a delayed auth restoration.
+    var user = _authRepository.currentUser;
+    if (user != null) {
+      emit(AuthAuthenticated(user));
+      return;
     }
 
-    // Listen to auth changes
-    await _authSubscription?.cancel();
-    _authSubscription = _authRepository.authStateChanges.listen((user) {
+    // Wait for up to 3 seconds for Firebase to restore the session
+    try {
+      user = await _authRepository.authStateChanges
+          .where((u) => u != null)
+          .first
+          .timeout(const Duration(seconds: 3));
       if (user != null) {
-        add(const AuthCheckRequested());
+        emit(AuthAuthenticated(user));
+        return;
       }
-    });
+    } catch (_) {
+      // Timeout — no session restored
+    }
+
+    emit(const AuthUnauthenticated());
   }
 
   Future<void> _onLoginRequested(
@@ -78,9 +85,4 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     );
   }
 
-  @override
-  Future<void> close() {
-    _authSubscription?.cancel();
-    return super.close();
-  }
 }

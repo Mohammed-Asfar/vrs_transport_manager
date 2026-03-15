@@ -20,4 +20,7 @@ abstract class TransportRepository {
 
   /// Search records by vehicle number, transporter, or location
   Future<Either<Failure, List<TransportRecord>>> searchRecords(String query);
+
+  /// Watch all transport records in real-time
+  Stream<List<TransportRecord>> watchRecords();
 }

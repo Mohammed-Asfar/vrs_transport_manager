@@ -18,11 +18,24 @@ class AppRouter {
   AppRouter(this.authBloc);
 
   late final GoRouter router = GoRouter(
-    initialLocation: '/login',
+    initialLocation: '/splash',
     refreshListenable: _AuthNotifier(authBloc),
     redirect: (context, state) {
-      final isAuthenticated = authBloc.state is AuthAuthenticated;
+      final authState = authBloc.state;
+      final isSplash = state.matchedLocation == '/splash';
       final isLoginRoute = state.matchedLocation == '/login';
+
+      // While auth is loading, stay on splash
+      if (authState is AuthInitial || authState is AuthLoading) {
+        return isSplash ? null : '/splash';
+      }
+
+      final isAuthenticated = authState is AuthAuthenticated;
+
+      // Auth resolved — leave splash
+      if (isSplash) {
+        return isAuthenticated ? '/' : '/login';
+      }
 
       if (!isAuthenticated && !isLoginRoute) {
         return '/login';
@@ -33,6 +46,12 @@ class AppRouter {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/splash',
+        builder: (context, state) => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+      ),
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginPage(),

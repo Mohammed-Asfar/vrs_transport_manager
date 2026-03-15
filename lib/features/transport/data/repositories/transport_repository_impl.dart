@@ -74,4 +74,9 @@ class TransportRepositoryImpl implements TransportRepository {
       return Left(ServerFailure(e.message));
     }
   }
+
+  @override
+  Stream<List<TransportRecord>> watchRecords() {
+    return _datasource.watchRecords();
+  }
 }

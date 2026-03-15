@@ -71,7 +71,10 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
             IconButton(
               icon: const Icon(Icons.edit_rounded),
               tooltip: 'Edit',
-              onPressed: () => context.push('/edit/${_record!.id}'),
+              onPressed: () async {
+                await context.push('/edit/${_record!.id}');
+                _loadRecord();
+              },
             ),
             IconButton(
               icon: const Icon(Icons.delete_rounded),
