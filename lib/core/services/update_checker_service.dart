@@ -16,26 +16,39 @@ class UpdateCheckerService {
 
   Future<void> checkForUpdates(BuildContext context) async {
     try {
+      debugPrint('Update check: fetching $_collection/$_document...');
       final doc =
           await _firestore.collection(_collection).doc(_document).get();
-      if (!doc.exists) return;
+      if (!doc.exists) {
+        debugPrint('Update check: document does not exist');
+        return;
+      }
 
       final data = doc.data();
-      if (data == null) return;
+      if (data == null) {
+        debugPrint('Update check: document data is null');
+        return;
+      }
+      debugPrint('Update check: data=$data');
 
       final latestVersion = data['latest_version'] as String?;
       final downloadUrl = data['download_url'] as String?;
       final releaseNotes = data['release_notes'] as String?;
       final forceUpdate = data['force_update'] as bool? ?? false;
 
-      if (latestVersion == null || downloadUrl == null) return;
+      if (latestVersion == null) {
+        debugPrint('Update check: latest_version is null');
+        return;
+      }
+
+      debugPrint('Update check: latest=$latestVersion current=${AppVersion.currentVersion} newer=${_isNewerVersion(latestVersion, AppVersion.currentVersion)}');
 
       if (_isNewerVersion(latestVersion, AppVersion.currentVersion)) {
         if (context.mounted) {
           _showUpdateDialog(
             context,
             latestVersion: latestVersion,
-            downloadUrl: downloadUrl,
+            downloadUrl: downloadUrl ?? '',
             releaseNotes: releaseNotes,
             forceUpdate: forceUpdate,
           );
