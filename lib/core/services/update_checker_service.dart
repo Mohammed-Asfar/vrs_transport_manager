@@ -12,7 +12,7 @@ class UpdateCheckerService {
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
   static const String _collection = 'app_config';
-  static const String _document = 'transport_version';
+  static const String _document = 'version';
 
   Future<void> checkForUpdates(BuildContext context) async {
     try {
