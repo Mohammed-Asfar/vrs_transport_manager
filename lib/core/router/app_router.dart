@@ -49,7 +49,13 @@ class AppRouter {
       GoRoute(
         path: '/splash',
         builder: (context, state) => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
+          body: Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            ),
+          ),
         ),
       ),
       GoRoute(

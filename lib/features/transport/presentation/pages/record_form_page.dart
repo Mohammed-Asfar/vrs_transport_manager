@@ -12,7 +12,6 @@ import 'package:vrs_transport_manager/features/transport/presentation/bloc/trans
 import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_event.dart';
 import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_state.dart';
 import 'package:vrs_transport_manager/di/injection_container.dart';
-
 import 'package:vrs_transport_manager/features/auth/domain/repositories/auth_repository.dart';
 
 class RecordFormPage extends StatefulWidget {
@@ -40,19 +39,25 @@ class _RecordFormPageState extends State<RecordFormPage> {
     super.initState();
     final record = widget.existingRecord;
     _selectedDate = record?.date ?? DateTime.now();
-    _locationController = TextEditingController(text: record?.location ?? 'Madayampakkam');
-    _dieselController = TextEditingController(text: record?.diesel.toString() ?? '0');
-    _advanceController = TextEditingController(text: record?.advance.toString() ?? '0');
+    _locationController =
+        TextEditingController(text: record?.location ?? 'Madayampakkam');
+    _dieselController =
+        TextEditingController(text: record?.diesel.toString() ?? '0');
+    _advanceController =
+        TextEditingController(text: record?.advance.toString() ?? '0');
 
     if (record != null && record.trips.isNotEmpty) {
       _trips = record.trips
           .map((t) => _TripFormData(
                 vehicleNo: TextEditingController(text: t.vehicleNo),
                 transporter: TextEditingController(text: t.transporter),
-                chainage: TextEditingController(text: t.chainage.toString()),
+                chainage:
+                    TextEditingController(text: t.chainage.toString()),
                 km: TextEditingController(text: t.km.toString()),
-                ratePerKm: TextEditingController(text: t.ratePerKm.toString()),
-                noOfLoads: TextEditingController(text: t.noOfLoads.toString()),
+                ratePerKm:
+                    TextEditingController(text: t.ratePerKm.toString()),
+                noOfLoads:
+                    TextEditingController(text: t.noOfLoads.toString()),
               ))
           .toList();
     } else {
@@ -93,7 +98,8 @@ class _RecordFormPageState extends State<RecordFormPage> {
   }
 
   int get _totalLoads {
-    return _trips.fold(0, (sum, t) => sum + (int.tryParse(t.noOfLoads.text) ?? 0));
+    return _trips.fold(
+        0, (sum, t) => sum + (int.tryParse(t.noOfLoads.text) ?? 0));
   }
 
   double get _totalAmount {
@@ -156,7 +162,6 @@ class _RecordFormPageState extends State<RecordFormPage> {
             SnackBar(
               content: Text(state.message),
               backgroundColor: AppColors.error,
-              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -165,201 +170,207 @@ class _RecordFormPageState extends State<RecordFormPage> {
         isLoading: state is TransportLoading,
         message: _isEditing ? 'Updating record...' : 'Saving record...',
         child: Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: AppBar(
-          title: Text(_isEditing ? 'Edit Record' : 'New Transport Record'),
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            onPressed: () => context.pop(),
-          ),
-          actions: [
-            Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: ElevatedButton.icon(
-                onPressed: _onSave,
-                icon: const Icon(Icons.save_rounded, size: 18),
-                label: Text(_isEditing ? 'Update' : 'Save'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: AppColors.primary,
+          backgroundColor: AppColors.background,
+          body: Column(
+            children: [
+              // Toolbar
+              _buildToolbar(),
+
+              // Form body
+              Expanded(
+                child: Form(
+                  key: _formKey,
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeaderSection(),
+                        const SizedBox(height: 20),
+                        _buildTripsSection(),
+                        const SizedBox(height: 20),
+                        _buildFinancialSection(),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        body: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Info Card
-                _buildHeaderCard(),
-                const SizedBox(height: 24),
-
-                // Trip entries
-                _buildTripsSection(),
-                const SizedBox(height: 24),
-
-                // Financial Summary
-                _buildFinancialSummary(),
-              ],
-            ),
+            ],
           ),
         ),
-      ),
       ),
     );
   }
 
-  Widget _buildHeaderCard() {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Record Details', style: AppTextStyles.heading3),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _locationController,
-                    label: 'Location',
-                    prefixIcon: Icons.location_on_outlined,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Location is required' : null,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: AppTextField(
-                    label: 'Date',
-                    readOnly: true,
-                    prefixIcon: Icons.calendar_today_outlined,
-                    controller: TextEditingController(
-                      text: DateFormatter.toDisplay(_selectedDate),
-                    ),
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedDate,
-                        firstDate: DateTime(2020),
-                        lastDate: DateTime(2030),
-                      );
-                      if (date != null) {
-                        setState(() => _selectedDate = date);
-                      }
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ],
+  Widget _buildToolbar() {
+    return Container(
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: const BoxDecoration(
+        color: AppColors.toolbar,
+        border: Border(
+          bottom: BorderSide(color: AppColors.separator, width: 0.5),
         ),
+      ),
+      child: Row(
+        children: [
+          // Back
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              iconSize: 18,
+              icon: const Icon(Icons.arrow_back_rounded,
+                  color: AppColors.accent),
+              onPressed: () => context.pop(),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            _isEditing ? 'Edit Record' : 'New Record',
+            style: AppTextStyles.heading3,
+          ),
+          const Spacer(),
+          SizedBox(
+            height: 28,
+            child: ElevatedButton.icon(
+              onPressed: _onSave,
+              icon: const Icon(Icons.check_rounded, size: 16),
+              label: Text(_isEditing ? 'Update' : 'Save'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                textStyle: AppTextStyles.button,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderSection() {
+    return _MacSection(
+      title: 'Record Details',
+      child: Row(
+        children: [
+          Expanded(
+            child: AppTextField(
+              controller: _locationController,
+              label: 'Location',
+              prefixIcon: Icons.location_on_outlined,
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Location is required' : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: AppTextField(
+              label: 'Date',
+              readOnly: true,
+              prefixIcon: Icons.calendar_today_outlined,
+              controller: TextEditingController(
+                text: DateFormatter.toDisplay(_selectedDate),
+              ),
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: _selectedDate,
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2030),
+                );
+                if (date != null) {
+                  setState(() => _selectedDate = date);
+                }
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildTripsSection() {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
+    return _MacSection(
+      title: 'Trip Entries',
+      trailing: SizedBox(
+        height: 26,
+        child: ElevatedButton.icon(
+          onPressed: _addTrip,
+          icon: const Icon(Icons.add, size: 14),
+          label: const Text('Add Trip'),
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            textStyle: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w500),
+          ),
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      child: Column(
+        children: [
+          // Table header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceSecondary,
+              border: Border(
+                bottom: BorderSide(color: AppColors.separator, width: 0.5),
+              ),
+            ),
+            child: Row(
               children: [
-                Text('Trip Entries', style: AppTextStyles.heading3),
-                const Spacer(),
-                ElevatedButton.icon(
-                  onPressed: _addTrip,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add Trip'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                ),
+                _headerCell('#', flex: 1),
+                _headerCell('Vehicle No', flex: 3),
+                _headerCell('Transporter', flex: 2),
+                _headerCell('Chainage', flex: 2),
+                _headerCell('KM', flex: 2),
+                _headerCell('Rate/KM', flex: 2),
+                _headerCell('Amount', flex: 2),
+                _headerCell('Loads', flex: 2),
+                const SizedBox(width: 32),
               ],
             ),
-            const SizedBox(height: 16),
+          ),
 
-            // Trip entries data table header
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  _headerCell('S.No', flex: 1),
-                  _headerCell('Vehicle No', flex: 3),
-                  _headerCell('Transporter', flex: 2),
-                  _headerCell('Chainage', flex: 2),
-                  _headerCell('KM', flex: 2),
-                  _headerCell('Rate/KM', flex: 2),
-                  _headerCell('Amount', flex: 2),
-                  _headerCell('Loads', flex: 2),
-                  const SizedBox(width: 40),
-                ],
+          // Trip rows
+          ...List.generate(_trips.length, (i) => _buildTripRow(i)),
+
+          // Totals
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceSecondary,
+              border: Border(
+                top: BorderSide(color: AppColors.separator, width: 0.5),
               ),
             ),
-            const SizedBox(height: 8),
-
-            // Trip rows
-            ...List.generate(_trips.length, (index) => _buildTripRow(index)),
-
-            const SizedBox(height: 12),
-            // Totals row
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  const Expanded(flex: 12, child: SizedBox()),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      '₹${_totalAmount.toStringAsFixed(0)}',
-                      style: AppTextStyles.subtitle.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
+            child: Row(
+              children: [
+                const Expanded(flex: 12, child: SizedBox()),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    '₹${_totalAmount.toStringAsFixed(0)}',
+                    style: AppTextStyles.tableCell.copyWith(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  Expanded(
-                    flex: 2,
-                    child: Text(
-                      '$_totalLoads',
-                      style: AppTextStyles.subtitle.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    '$_totalLoads',
+                    style: AppTextStyles.tableCell.copyWith(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(width: 40),
-                ],
-              ),
+                ),
+                const SizedBox(width: 32),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -373,85 +384,75 @@ class _RecordFormPageState extends State<RecordFormPage> {
 
   Widget _buildTripRow(int index) {
     final trip = _trips[index];
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.border),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: AppColors.separatorLight, width: 0.5),
         ),
-        child: Row(
-          children: [
-            // S.No
-            Expanded(
-              flex: 1,
-              child: Text(
-                '${index + 1}',
-                style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
-              ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 1,
+            child: Text(
+              '${index + 1}',
+              style: AppTextStyles.tableCell
+                  .copyWith(fontWeight: FontWeight.w500),
             ),
-            // Vehicle No
-            Expanded(
+          ),
+          Expanded(
               flex: 3,
               child: _rowField(trip.vehicleNo, 'Vehicle No',
-                  validator: (v) => v?.isEmpty == true ? 'Required' : null),
-            ),
-            // Transporter
-            Expanded(
+                  validator: (v) => v?.isEmpty == true ? 'Required' : null)),
+          Expanded(
               flex: 2,
               child: _rowField(trip.transporter, 'Transporter',
-                  validator: (v) => v?.isEmpty == true ? 'Required' : null),
-            ),
-            // Chainage
-            Expanded(
+                  validator: (v) => v?.isEmpty == true ? 'Required' : null)),
+          Expanded(
               flex: 2,
-              child: _rowField(trip.chainage, 'Chainage', isNumber: true),
-            ),
-            // KM
-            Expanded(
+              child: _rowField(trip.chainage, 'Chainage', isNumber: true)),
+          Expanded(
               flex: 2,
-              child: _rowField(trip.km, 'KM', isNumber: true, onChanged: (_) => setState(() {})),
-            ),
-            // Rate/KM
-            Expanded(
+              child: _rowField(trip.km, 'KM',
+                  isNumber: true, onChanged: (_) => setState(() {}))),
+          Expanded(
               flex: 2,
-              child: _rowField(trip.ratePerKm, 'Rate', isNumber: true, onChanged: (_) => setState(() {})),
-            ),
-            // Amount (calculated)
-            Expanded(
-              flex: 2,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  '₹${_calculateTripAmount(index).toStringAsFixed(0)}',
-                  style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
-                ),
+              child: _rowField(trip.ratePerKm, 'Rate',
+                  isNumber: true, onChanged: (_) => setState(() {}))),
+          Expanded(
+            flex: 2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceSecondary,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '₹${_calculateTripAmount(index).toStringAsFixed(0)}',
+                style: AppTextStyles.tableCell
+                    .copyWith(fontWeight: FontWeight.w500),
               ),
             ),
-            // No of Loads
-            Expanded(
+          ),
+          Expanded(
               flex: 2,
-              child: _rowField(trip.noOfLoads, 'Loads', isNumber: true, onChanged: (_) => setState(() {})),
-            ),
-            // Delete button
-            SizedBox(
-              width: 40,
-              child: _trips.length > 1
-                  ? IconButton(
-                      icon: const Icon(Icons.remove_circle_outline, color: AppColors.error, size: 20),
-                      onPressed: () => _removeTrip(index),
-                      tooltip: 'Remove trip',
-                    )
-                  : null,
-            ),
-          ],
-        ),
+              child: _rowField(trip.noOfLoads, 'Loads',
+                  isNumber: true, onChanged: (_) => setState(() {}))),
+          SizedBox(
+            width: 32,
+            child: _trips.length > 1
+                ? IconButton(
+                    padding: EdgeInsets.zero,
+                    iconSize: 16,
+                    icon: const Icon(Icons.remove_circle_outline,
+                        color: AppColors.error, size: 16),
+                    onPressed: () => _removeTrip(index),
+                    tooltip: 'Remove trip',
+                  )
+                : null,
+          ),
+        ],
       ),
     );
   }
@@ -464,7 +465,7 @@ class _RecordFormPageState extends State<RecordFormPage> {
     void Function(String)? onChanged,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 3),
       child: TextFormField(
         controller: controller,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
@@ -473,11 +474,13 @@ class _RecordFormPageState extends State<RecordFormPage> {
         style: AppTextStyles.tableCell,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: AppTextStyles.tableCell.copyWith(color: AppColors.textHint),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          hintStyle:
+              AppTextStyles.tableCell.copyWith(color: AppColors.textTertiary),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
           isDense: true,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(4),
             borderSide: BorderSide.none,
           ),
           filled: true,
@@ -487,91 +490,143 @@ class _RecordFormPageState extends State<RecordFormPage> {
     );
   }
 
-  Widget _buildFinancialSummary() {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Financial Summary', style: AppTextStyles.heading3),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _dieselController,
-                    label: 'Diesel',
-                    prefixIcon: Icons.local_gas_station_outlined,
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => setState(() {}),
-                  ),
+  Widget _buildFinancialSection() {
+    return _MacSection(
+      title: 'Financial Summary',
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: AppTextField(
+                  controller: _dieselController,
+                  label: 'Diesel',
+                  prefixIcon: Icons.local_gas_station_outlined,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: AppTextField(
-                    controller: _advanceController,
-                    label: 'Advance',
-                    prefixIcon: Icons.payments_outlined,
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => setState(() {}),
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: AppTextField(
+                  controller: _advanceController,
+                  label: 'Advance',
+                  prefixIcon: Icons.payments_outlined,
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setState(() {}),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSecondary,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: AppColors.separator, width: 0.5),
+            ),
+            child: Column(
+              children: [
+                _summaryRow('Total Amount',
+                    '₹${_totalAmount.toStringAsFixed(0)}'),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(height: 0.5),
+                ),
+                _summaryRow(
+                    'Diesel', '- ₹${_diesel.toStringAsFixed(0)}'),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(height: 0.5),
+                ),
+                _summaryRow(
+                    'Advance', '- ₹${_advance.toStringAsFixed(0)}'),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(height: 0.5),
+                ),
+                _summaryRow(
+                  'Balance',
+                  '₹${_balance.toStringAsFixed(0)}',
+                  isBold: true,
+                  valueColor:
+                      _balance >= 0 ? AppColors.success : AppColors.error,
                 ),
               ],
             ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                children: [
-                  _summaryRow('Total Amount', '₹${_totalAmount.toStringAsFixed(0)}'),
-                  const Divider(height: 20),
-                  _summaryRow('Diesel', '- ₹${_diesel.toStringAsFixed(0)}'),
-                  const Divider(height: 20),
-                  _summaryRow('Advance', '- ₹${_advance.toStringAsFixed(0)}'),
-                  const Divider(height: 20),
-                  _summaryRow(
-                    'Balance',
-                    '₹${_balance.toStringAsFixed(0)}',
-                    isBold: true,
-                    valueColor: _balance >= 0 ? AppColors.success : AppColors.error,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _summaryRow(String label, String value, {bool isBold = false, Color? valueColor}) {
+  Widget _summaryRow(String label, String value,
+      {bool isBold = false, Color? valueColor}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           label,
           style: isBold
-              ? AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.w700)
+              ? AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.w600)
               : AppTextStyles.body,
         ),
         Text(
           value,
-          style: (isBold ? AppTextStyles.heading3 : AppTextStyles.subtitle).copyWith(
+          style: (isBold ? AppTextStyles.heading3 : AppTextStyles.subtitle)
+              .copyWith(
             color: valueColor,
             fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ],
+    );
+  }
+}
+
+/// macOS-style section container with thin border and title.
+class _MacSection extends StatelessWidget {
+  final String title;
+  final Widget child;
+  final Widget? trailing;
+
+  const _MacSection({
+    required this.title,
+    required this.child,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.separator, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            child: Row(
+              children: [
+                Text(title, style: AppTextStyles.heading3),
+                if (trailing != null) ...[
+                  const Spacer(),
+                  trailing!,
+                ],
+              ],
+            ),
+          ),
+          const Divider(height: 0.5),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: child,
+          ),
+        ],
+      ),
     );
   }
 }

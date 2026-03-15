@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:vrs_transport_manager/core/theme/app_colors.dart';
+import 'package:vrs_transport_manager/core/theme/app_text_styles.dart';
 
+/// macOS-style text input field with subtle border and clean labels.
 class AppTextField extends StatelessWidget {
   final TextEditingController? controller;
   final String label;
@@ -45,12 +47,12 @@ class AppTextField extends StatelessWidget {
       onTap: onTap,
       maxLines: maxLines,
       enabled: enabled,
-      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+      style: AppTextStyles.body.copyWith(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
         prefixIcon: prefixIcon != null
-            ? Icon(prefixIcon, size: 20, color: AppColors.textSecondary)
+            ? Icon(prefixIcon, size: 16, color: AppColors.textTertiary)
             : null,
         suffixIcon: suffix,
       ),

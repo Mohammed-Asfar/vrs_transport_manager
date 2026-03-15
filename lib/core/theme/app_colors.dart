@@ -3,38 +3,44 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
-  // Primary palette
-  static const Color primary = Color(0xFF1565C0);
-  static const Color primaryLight = Color(0xFF42A5F5);
-  static const Color primaryDark = Color(0xFF0D47A1);
+  // macOS Accent
+  static const Color accent = Color(0xFF0A84FF);
+  static const Color accentHover = Color(0xFF409CFF);
+  static const Color accentLight = Color(0xFF142A3E);
 
-  // Secondary palette
-  static const Color secondary = Color(0xFF00897B);
-  static const Color secondaryLight = Color(0xFF4DB6AC);
+  // Surfaces — macOS dark mode
+  static const Color background = Color(0xFF1E1E1E);
+  static const Color surface = Color(0xFF2D2D2D);
+  static const Color surfaceSecondary = Color(0xFF383838);
+  static const Color toolbar = Color(0xFF2A2A2A);
 
-  // Surface & Background
-  static const Color background = Color(0xFFF5F7FA);
-  static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFE8EDF2);
-  static const Color cardBackground = Color(0xFFFFFFFF);
+  // Text — Apple HIG dark
+  static const Color textPrimary = Color(0xFFF5F5F7);
+  static const Color textSecondary = Color(0xFF98989D);
+  static const Color textTertiary = Color(0xFF636366);
 
-  // Text
-  static const Color textPrimary = Color(0xFF1A1A2E);
-  static const Color textSecondary = Color(0xFF6B7280);
-  static const Color textHint = Color(0xFF9CA3AF);
+  // Borders & Separators — subtle dark lines
+  static const Color separator = Color(0xFF3A3A3C);
+  static const Color separatorLight = Color(0xFF333335);
+  static const Color border = Color(0xFF48484A);
 
-  // Status
-  static const Color success = Color(0xFF2E7D32);
-  static const Color error = Color(0xFFD32F2F);
-  static const Color warning = Color(0xFFF57C00);
-  static const Color info = Color(0xFF0288D1);
+  // Status — brighter for dark backgrounds
+  static const Color success = Color(0xFF30D158);
+  static const Color error = Color(0xFFFF453A);
+  static const Color warning = Color(0xFFFF9F0A);
+  static const Color info = Color(0xFF64D2FF);
 
-  // Borders & Dividers
-  static const Color border = Color(0xFFE0E0E0);
-  static const Color divider = Color(0xFFEEEEEE);
-
-  // Sidebar
-  static const Color sidebarBg = Color(0xFF0D47A1);
-  static const Color sidebarText = Color(0xFFFFFFFF);
-  static const Color sidebarActiveItem = Color(0xFF1565C0);
+  // Legacy aliases
+  static const Color primary = accent;
+  static const Color primaryLight = accentLight;
+  static const Color primaryDark = Color(0xFF0060C0);
+  static const Color secondary = Color(0xFF5E5CE6);
+  static const Color cardBackground = surface;
+  static const Color textHint = textTertiary;
+  static const Color divider = separator;
+  static const Color surfaceVariant = surfaceSecondary;
+  static const Color sidebarBg = Color(0xFF252525);
+  static const Color sidebarText = textPrimary;
+  static const Color sidebarActiveItem = accentLight;
+  static const Color secondaryLight = Color(0xFF7A79E0);
 }
