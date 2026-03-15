@@ -1,17 +1,82 @@
-# vrs_transport_manager
+# VRS Transport Manager
 
-A new Flutter project.
+A Flutter Windows desktop application for **VRS Enterprises, Madayampakkam** to manage transport trip records with Firestore backend, Firebase Authentication, full CRUD operations, search, and PDF export.
+
+> **Developer:** Asfar
+
+---
+
+## Features
+
+- **Firebase Email/Password Authentication** — Login-only (no registration)
+- **Transport Record Management** — Full CRUD (Create, Read, Update, Delete)
+- **Search** — Search by vehicle number, transporter, or location
+- **PDF Export** — Generate and download PDF matching the original VRS format
+- **Auto-Calculations** — Amount per trip, total loads, total amount, and balance
+- **Enterprise Architecture** — Clean Architecture + BLoC + SOLID principles
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Flutter (Windows Desktop) |
+| State Management | `flutter_bloc` (BLoC pattern) |
+| Backend | Firebase Firestore (`vrs-invoice-db` project) |
+| Authentication | Firebase Email/Password Auth |
+| DI | `get_it` (Service Locator) |
+| Routing | `go_router` with auth guards |
+| Error Handling | `dartz` (Either pattern) |
+| PDF | `pdf` + `printing` |
+
+## Architecture
+
+```
+lib/
+├── core/                     # Shared infrastructure
+│   ├── constants/            # Firestore field constants
+│   ├── errors/               # Exceptions & Failures
+│   ├── router/               # GoRouter config with auth
+│   ├── theme/                # Colors, Theme, Typography
+│   ├── utils/                # Date formatter, PDF generator
+│   └── widgets/              # Reusable widgets
+├── features/
+│   ├── auth/                 # Authentication feature
+│   │   ├── data/             # Datasource + Repository impl
+│   │   ├── domain/           # Entity, Repository, Use Cases
+│   │   └── presentation/     # BLoC + Login page
+│   └── transport/            # Transport records feature
+│       ├── data/             # Model, Datasource, Repository impl
+│       ├── domain/           # Entities, Repository, Use Cases
+│       └── presentation/     # BLoC + Dashboard, Form, Detail pages
+├── di/                       # Dependency injection container
+├── firebase_options.dart     # Firebase configuration
+└── main.dart                 # App entry point
+```
+
+## Firestore Collection
+
+**Collection:** `transport_records`
+
+Each document contains: date, location, trips (array), totalLoads, totalAmount, diesel, advance, balance, timestamps, and createdBy user ID.
 
 ## Getting Started
 
-This project is a starting point for a Flutter application.
+### Prerequisites
+- Flutter SDK (^3.11.0)
+- Firebase project with Email/Password Auth enabled
+- User accounts created in Firebase Console
 
-A few resources to get you started if this is your first Flutter project:
+### Run
+```bash
+flutter pub get
+flutter run -d windows
+```
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### Build
+```bash
+flutter build windows
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## License
+
+Private — VRS Enterprises
