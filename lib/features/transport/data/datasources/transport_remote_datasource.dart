@@ -75,6 +75,26 @@ class TransportRemoteDatasource {
     }
   }
 
+  Future<List<TransportRecordModel>> getRecordsByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    try {
+      final snapshot = await _collection
+          .where(FirestoreConstants.date,
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where(FirestoreConstants.date,
+              isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+          .orderBy(FirestoreConstants.date, descending: true)
+          .get();
+      return snapshot.docs
+          .map((doc) => TransportRecordModel.fromFirestore(doc))
+          .toList();
+    } catch (e) {
+      throw ServerException('Failed to fetch records by date range: $e');
+    }
+  }
+
   Future<List<TransportRecordModel>> searchRecords(String query) async {
     try {
       // Firestore doesn't support full-text search natively,
@@ -87,13 +107,13 @@ class TransportRemoteDatasource {
       return snapshot.docs
           .map((doc) => TransportRecordModel.fromFirestore(doc))
           .where((record) {
-        // Search in location
+        // Search in location and transporter
         if (record.location.toLowerCase().contains(lowerQuery)) return true;
+        if (record.transporter.toLowerCase().contains(lowerQuery)) return true;
 
-        // Search in trips (vehicle no, transporter)
+        // Search in trips (vehicle no)
         for (final trip in record.trips) {
           if (trip.vehicleNo.toLowerCase().contains(lowerQuery)) return true;
-          if (trip.transporter.toLowerCase().contains(lowerQuery)) return true;
         }
         return false;
       }).toList();

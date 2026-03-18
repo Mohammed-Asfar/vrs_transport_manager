@@ -5,6 +5,7 @@ class TransportRecord extends Equatable {
   final String? id;
   final DateTime date;
   final String location;
+  final String transporter;
   final List<TripEntry> trips;
   final int totalLoads;
   final double totalAmount;
@@ -19,6 +20,7 @@ class TransportRecord extends Equatable {
     this.id,
     required this.date,
     required this.location,
+    required this.transporter,
     required this.trips,
     required this.totalLoads,
     required this.totalAmount,
@@ -35,6 +37,7 @@ class TransportRecord extends Equatable {
     String? id,
     required DateTime date,
     required String location,
+    required String transporter,
     required List<TripEntry> trips,
     required double diesel,
     required double advance,
@@ -51,6 +54,7 @@ class TransportRecord extends Equatable {
       id: id,
       date: date,
       location: location,
+      transporter: transporter,
       trips: trips,
       totalLoads: totalLoads,
       totalAmount: totalAmount,
@@ -65,6 +69,7 @@ class TransportRecord extends Equatable {
     String? id,
     DateTime? date,
     String? location,
+    String? transporter,
     List<TripEntry>? trips,
     int? totalLoads,
     double? totalAmount,
@@ -79,6 +84,7 @@ class TransportRecord extends Equatable {
       id: id ?? this.id,
       date: date ?? this.date,
       location: location ?? this.location,
+      transporter: transporter ?? this.transporter,
       trips: trips ?? this.trips,
       totalLoads: totalLoads ?? this.totalLoads,
       totalAmount: totalAmount ?? this.totalAmount,
@@ -96,6 +102,7 @@ class TransportRecord extends Equatable {
         id,
         date,
         location,
+        transporter,
         trips,
         totalLoads,
         totalAmount,

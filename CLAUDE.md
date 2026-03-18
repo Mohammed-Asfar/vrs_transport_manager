@@ -66,6 +66,23 @@ Two BLoCs:
 - **AuthBloc**: `AuthCheckRequested` → monitors Firebase auth stream; `AuthLoginRequested` / `AuthLogoutRequested`
 - **TransportBloc**: Load, Create, Update, Delete, Search, ClearSearch — successful mutations auto-reload the list
 
+## Versioning & Installer
+
+App version is defined in **three places** that must stay in sync:
+- `lib/core/utils/app_version.dart` — `AppVersion.currentVersion` (used at runtime)
+- `pubspec.yaml` — `version:` field
+- `installer.iss` — `AppVersion` and `OutputBaseFilename` (Inno Setup script for Windows installer)
+
+Build the installer: `flutter build windows` then compile `installer.iss` with Inno Setup. Output goes to `installer_output/`.
+
+## In-App Update Checker
+
+`UpdateCheckerService` reads from Firestore collection `app_config`, document `version` with fields: `latest_version`, `download_url`, `release_notes`, `force_update`. When `latest_version` exceeds `AppVersion.currentVersion`, an update dialog is shown.
+
+## Adding a New Feature
+
+Follow the existing pattern: create `data/`, `domain/`, `presentation/` directories under `features/<name>/`. Then register all new datasources, repositories, use cases, and BLoCs in `di/injection_container.dart` — the app won't see them otherwise.
+
 ## Tech Stack
 
-Flutter (Dart 3.11+), flutter_bloc, go_router, firebase_core/auth/cloud_firestore, dartz, get_it, equatable, pdf + printing, intl
+Flutter (Dart 3.11+), flutter_bloc, go_router, firebase_core/auth/cloud_firestore, dartz, get_it, equatable, pdf + printing, intl, url_launcher

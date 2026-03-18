@@ -64,6 +64,20 @@ class TransportRepositoryImpl implements TransportRepository {
   }
 
   @override
+  Future<Either<Failure, List<TransportRecord>>> getRecordsByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    try {
+      final records =
+          await _datasource.getRecordsByDateRange(startDate, endDate);
+      return Right(records);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<TransportRecord>>> searchRecords(
     String query,
   ) async {

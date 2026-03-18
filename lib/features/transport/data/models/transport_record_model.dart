@@ -7,6 +7,7 @@ class TransportRecordModel extends TransportRecord {
     super.id,
     required super.date,
     required super.location,
+    required super.transporter,
     required super.trips,
     required super.totalLoads,
     required super.totalAmount,
@@ -23,6 +24,7 @@ class TransportRecordModel extends TransportRecord {
       id: entity.id,
       date: entity.date,
       location: entity.location,
+      transporter: entity.transporter,
       trips: entity.trips,
       totalLoads: entity.totalLoads,
       totalAmount: entity.totalAmount,
@@ -39,14 +41,27 @@ class TransportRecordModel extends TransportRecord {
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
     final data = doc.data()!;
+
+    final trips = (data['trips'] as List<dynamic>?)
+            ?.map((t) => TripEntry.fromMap(t as Map<String, dynamic>))
+            .toList() ??
+        [];
+
+    // Migration: read transporter from record level, fallback to first trip's
+    // transporter field (old schema stored it per-trip)
+    String transporter = data['transporter'] as String? ?? '';
+    if (transporter.isEmpty && trips.isNotEmpty) {
+      final firstTripData = (data['trips'] as List<dynamic>?)?.first
+          as Map<String, dynamic>?;
+      transporter = firstTripData?['transporter'] as String? ?? '';
+    }
+
     return TransportRecordModel(
       id: doc.id,
       date: (data['date'] as Timestamp).toDate(),
       location: data['location'] as String? ?? '',
-      trips: (data['trips'] as List<dynamic>?)
-              ?.map((t) => TripEntry.fromMap(t as Map<String, dynamic>))
-              .toList() ??
-          [],
+      transporter: transporter,
+      trips: trips,
       totalLoads: (data['totalLoads'] as num?)?.toInt() ?? 0,
       totalAmount: (data['totalAmount'] as num?)?.toDouble() ?? 0,
       diesel: (data['diesel'] as num?)?.toDouble() ?? 0,
@@ -62,6 +77,7 @@ class TransportRecordModel extends TransportRecord {
     return {
       'date': Timestamp.fromDate(date),
       'location': location,
+      'transporter': transporter,
       'trips': trips.map((t) => t.toMap()).toList(),
       'totalLoads': totalLoads,
       'totalAmount': totalAmount,

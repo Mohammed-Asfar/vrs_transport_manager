@@ -5,6 +5,8 @@ import 'package:vrs_transport_manager/di/injection_container.dart';
 import 'package:vrs_transport_manager/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:vrs_transport_manager/features/auth/presentation/bloc/auth_state.dart';
 import 'package:vrs_transport_manager/features/auth/presentation/pages/login_page.dart';
+import 'package:vrs_transport_manager/features/reports/presentation/bloc/report_bloc.dart';
+import 'package:vrs_transport_manager/features/reports/presentation/pages/report_page.dart';
 import 'package:vrs_transport_manager/features/transport/domain/entities/transport_record.dart';
 import 'package:vrs_transport_manager/features/transport/domain/usecases/transport_usecases.dart';
 import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_bloc.dart';
@@ -67,6 +69,13 @@ class AppRouter {
         builder: (context, state) => BlocProvider(
           create: (_) => sl<TransportBloc>(),
           child: const DashboardPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/reports',
+        builder: (context, state) => BlocProvider(
+          create: (_) => sl<ReportBloc>(),
+          child: const ReportPage(),
         ),
       ),
       GoRoute(

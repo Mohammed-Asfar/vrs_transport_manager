@@ -215,6 +215,12 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
                   style: AppTextStyles.bodySmall
                       .copyWith(color: AppColors.textSecondary),
                 ),
+                if (record.transporter.isNotEmpty)
+                  Text(
+                    'Transporter: ${record.transporter}',
+                    style: AppTextStyles.bodySmall
+                        .copyWith(color: AppColors.textTertiary),
+                  ),
               ],
             ),
           ),
@@ -266,7 +272,6 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
               columns: const [
                 DataColumn(label: Text('S.No')),
                 DataColumn(label: Text('Vehicle No')),
-                DataColumn(label: Text('Transporter')),
                 DataColumn(label: Text('Chainage'), numeric: true),
                 DataColumn(label: Text('KM'), numeric: true),
                 DataColumn(label: Text('Rate/KM'), numeric: true),
@@ -278,7 +283,6 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
                   (trip) => DataRow(cells: [
                     DataCell(Text('${trip.sNo}')),
                     DataCell(Text(trip.vehicleNo)),
-                    DataCell(Text(trip.transporter)),
                     DataCell(Text(trip.chainage.toStringAsFixed(0))),
                     DataCell(Text(trip.km.toStringAsFixed(0))),
                     DataCell(Text(trip.ratePerKm.toStringAsFixed(0))),
@@ -291,7 +295,6 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
                 DataRow(
                   color: WidgetStateProperty.all(AppColors.surfaceSecondary),
                   cells: [
-                    const DataCell(Text('')),
                     const DataCell(Text('')),
                     const DataCell(Text('')),
                     const DataCell(Text('')),

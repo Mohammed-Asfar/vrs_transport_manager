@@ -156,6 +156,22 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const SizedBox(width: 12),
 
+          // Reports
+          SizedBox(
+            height: 36,
+            child: OutlinedButton.icon(
+              onPressed: () => context.push('/reports'),
+              icon: const Icon(Icons.summarize_outlined, size: 16),
+              label: const Text('Reports'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                textStyle: AppTextStyles.button,
+                side: const BorderSide(color: AppColors.border, width: 0.5),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+
           // New Record
           SizedBox(
             height: 36,
@@ -483,7 +499,7 @@ class _FinderRowState extends State<_FinderRow> {
               Expanded(
                 flex: 2,
                 child: Text(
-                  '${widget.record.trips.length} vehicle(s) · ${widget.record.totalLoads} loads',
+                  '${widget.record.transporter} · ${widget.record.totalLoads} loads',
                   style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
                   overflow: TextOverflow.ellipsis,
                 ),

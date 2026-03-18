@@ -18,6 +18,12 @@ abstract class TransportRepository {
   /// Delete a transport record
   Future<Either<Failure, void>> deleteRecord(String id);
 
+  /// Get records within a date range
+  Future<Either<Failure, List<TransportRecord>>> getRecordsByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  );
+
   /// Search records by vehicle number, transporter, or location
   Future<Either<Failure, List<TransportRecord>>> searchRecords(String query);
 

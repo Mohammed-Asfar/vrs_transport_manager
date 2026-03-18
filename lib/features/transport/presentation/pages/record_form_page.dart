@@ -28,6 +28,7 @@ class _RecordFormPageState extends State<RecordFormPage> {
 
   late DateTime _selectedDate;
   late TextEditingController _locationController;
+  late TextEditingController _transporterController;
   late TextEditingController _dieselController;
   late TextEditingController _advanceController;
   late List<_TripFormData> _trips;
@@ -41,6 +42,8 @@ class _RecordFormPageState extends State<RecordFormPage> {
     _selectedDate = record?.date ?? DateTime.now();
     _locationController =
         TextEditingController(text: record?.location ?? 'Madayampakkam');
+    _transporterController =
+        TextEditingController(text: record?.transporter ?? '');
     _dieselController =
         TextEditingController(text: record?.diesel.toString() ?? '0');
     _advanceController =
@@ -50,7 +53,6 @@ class _RecordFormPageState extends State<RecordFormPage> {
       _trips = record.trips
           .map((t) => _TripFormData(
                 vehicleNo: TextEditingController(text: t.vehicleNo),
-                transporter: TextEditingController(text: t.transporter),
                 chainage:
                     TextEditingController(text: t.chainage.toString()),
                 km: TextEditingController(text: t.km.toString()),
@@ -68,6 +70,7 @@ class _RecordFormPageState extends State<RecordFormPage> {
   @override
   void dispose() {
     _locationController.dispose();
+    _transporterController.dispose();
     _dieselController.dispose();
     _advanceController.dispose();
     for (final trip in _trips) {
@@ -123,7 +126,6 @@ class _RecordFormPageState extends State<RecordFormPage> {
       trips.add(TripEntry.create(
         sNo: i + 1,
         vehicleNo: _trips[i].vehicleNo.text.trim(),
-        transporter: _trips[i].transporter.text.trim(),
         chainage: double.tryParse(_trips[i].chainage.text) ?? 0,
         km: double.tryParse(_trips[i].km.text) ?? 0,
         ratePerKm: double.tryParse(_trips[i].ratePerKm.text) ?? 0,
@@ -137,6 +139,7 @@ class _RecordFormPageState extends State<RecordFormPage> {
       id: widget.existingRecord?.id,
       date: _selectedDate,
       location: _locationController.text.trim(),
+      transporter: _transporterController.text.trim(),
       trips: trips,
       diesel: _diesel,
       advance: _advance,
@@ -266,6 +269,16 @@ class _RecordFormPageState extends State<RecordFormPage> {
           const SizedBox(width: 12),
           Expanded(
             child: AppTextField(
+              controller: _transporterController,
+              label: 'Transporter',
+              prefixIcon: Icons.person_outline,
+              validator: (v) =>
+                  v == null || v.trim().isEmpty ? 'Transporter is required' : null,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: AppTextField(
               label: 'Date',
               readOnly: true,
               prefixIcon: Icons.calendar_today_outlined,
@@ -320,7 +333,6 @@ class _RecordFormPageState extends State<RecordFormPage> {
               children: [
                 _headerCell('#', flex: 1),
                 _headerCell('Vehicle No', flex: 3),
-                _headerCell('Transporter', flex: 2),
                 _headerCell('Chainage', flex: 2),
                 _headerCell('KM', flex: 2),
                 _headerCell('Rate/KM', flex: 2),
@@ -345,7 +357,7 @@ class _RecordFormPageState extends State<RecordFormPage> {
             ),
             child: Row(
               children: [
-                const Expanded(flex: 12, child: SizedBox()),
+                const Expanded(flex: 10, child: SizedBox()),
                 Expanded(
                   flex: 2,
                   child: Text(
@@ -404,10 +416,6 @@ class _RecordFormPageState extends State<RecordFormPage> {
           Expanded(
               flex: 3,
               child: _rowField(trip.vehicleNo, 'Vehicle No',
-                  validator: (v) => v?.isEmpty == true ? 'Required' : null)),
-          Expanded(
-              flex: 2,
-              child: _rowField(trip.transporter, 'Transporter',
                   validator: (v) => v?.isEmpty == true ? 'Required' : null)),
           Expanded(
               flex: 2,
@@ -633,7 +641,6 @@ class _MacSection extends StatelessWidget {
 
 class _TripFormData {
   final TextEditingController vehicleNo;
-  final TextEditingController transporter;
   final TextEditingController chainage;
   final TextEditingController km;
   final TextEditingController ratePerKm;
@@ -641,7 +648,6 @@ class _TripFormData {
 
   _TripFormData({
     required this.vehicleNo,
-    required this.transporter,
     required this.chainage,
     required this.km,
     required this.ratePerKm,
@@ -651,7 +657,6 @@ class _TripFormData {
   factory _TripFormData.empty() {
     return _TripFormData(
       vehicleNo: TextEditingController(),
-      transporter: TextEditingController(),
       chainage: TextEditingController(),
       km: TextEditingController(),
       ratePerKm: TextEditingController(),
@@ -661,7 +666,6 @@ class _TripFormData {
 
   void dispose() {
     vehicleNo.dispose();
-    transporter.dispose();
     chainage.dispose();
     km.dispose();
     ratePerKm.dispose();

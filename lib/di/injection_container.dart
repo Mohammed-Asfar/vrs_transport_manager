@@ -10,6 +10,10 @@ import 'package:vrs_transport_manager/features/auth/domain/usecases/login_usecas
 import 'package:vrs_transport_manager/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:vrs_transport_manager/features/auth/presentation/bloc/auth_bloc.dart';
 
+// Reports
+import 'package:vrs_transport_manager/features/reports/domain/usecases/generate_report_usecase.dart';
+import 'package:vrs_transport_manager/features/reports/presentation/bloc/report_bloc.dart';
+
 // Transport
 import 'package:vrs_transport_manager/features/transport/data/datasources/transport_remote_datasource.dart';
 import 'package:vrs_transport_manager/features/transport/data/repositories/transport_repository_impl.dart';
@@ -77,5 +81,15 @@ Future<void> initDependencies() async {
       searchRecords: sl<SearchRecordsUseCase>(),
       repository: sl<TransportRepository>(),
     ),
+  );
+
+  // ──── Reports Feature ────
+  // Use Case
+  sl.registerLazySingleton(
+      () => GenerateReportUseCase(sl<TransportRepository>()));
+
+  // BLoC
+  sl.registerFactory(
+    () => ReportBloc(generateReport: sl<GenerateReportUseCase>()),
   );
 }

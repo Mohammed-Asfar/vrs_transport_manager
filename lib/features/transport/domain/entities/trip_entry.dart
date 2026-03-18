@@ -3,7 +3,6 @@ import 'package:equatable/equatable.dart';
 class TripEntry extends Equatable {
   final int sNo;
   final String vehicleNo;
-  final String transporter;
   final double chainage;
   final double km;
   final double ratePerKm;
@@ -13,7 +12,6 @@ class TripEntry extends Equatable {
   const TripEntry({
     required this.sNo,
     required this.vehicleNo,
-    required this.transporter,
     required this.chainage,
     required this.km,
     required this.ratePerKm,
@@ -25,7 +23,6 @@ class TripEntry extends Equatable {
   factory TripEntry.create({
     required int sNo,
     required String vehicleNo,
-    required String transporter,
     required double chainage,
     required double km,
     required double ratePerKm,
@@ -34,7 +31,6 @@ class TripEntry extends Equatable {
     return TripEntry(
       sNo: sNo,
       vehicleNo: vehicleNo,
-      transporter: transporter,
       chainage: chainage,
       km: km,
       ratePerKm: ratePerKm,
@@ -46,7 +42,6 @@ class TripEntry extends Equatable {
   TripEntry copyWith({
     int? sNo,
     String? vehicleNo,
-    String? transporter,
     double? chainage,
     double? km,
     double? ratePerKm,
@@ -58,7 +53,6 @@ class TripEntry extends Equatable {
     return TripEntry(
       sNo: sNo ?? this.sNo,
       vehicleNo: vehicleNo ?? this.vehicleNo,
-      transporter: transporter ?? this.transporter,
       chainage: chainage ?? this.chainage,
       km: newKm,
       ratePerKm: newRate,
@@ -71,7 +65,6 @@ class TripEntry extends Equatable {
     return {
       'sNo': sNo,
       'vehicleNo': vehicleNo,
-      'transporter': transporter,
       'chainage': chainage,
       'km': km,
       'ratePerKm': ratePerKm,
@@ -84,7 +77,6 @@ class TripEntry extends Equatable {
     return TripEntry(
       sNo: (map['sNo'] as num).toInt(),
       vehicleNo: map['vehicleNo'] as String,
-      transporter: map['transporter'] as String,
       chainage: (map['chainage'] as num).toDouble(),
       km: (map['km'] as num).toDouble(),
       ratePerKm: (map['ratePerKm'] as num).toDouble(),
@@ -97,7 +89,6 @@ class TripEntry extends Equatable {
   List<Object> get props => [
         sNo,
         vehicleNo,
-        transporter,
         chainage,
         km,
         ratePerKm,

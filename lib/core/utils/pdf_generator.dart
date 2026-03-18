@@ -81,6 +81,13 @@ class PdfGenerator {
                   letterSpacing: 0.5,
                 ),
               ),
+              if (record.transporter.isNotEmpty) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  'Transporter: ${record.transporter}',
+                  style: pw.TextStyle(fontSize: 9, color: _mutedText),
+                ),
+              ],
             ],
           ),
           pw.Spacer(),
@@ -109,13 +116,12 @@ class PdfGenerator {
       border: pw.TableBorder.all(color: _borderColor, width: 0.5),
       columnWidths: {
         0: const pw.FixedColumnWidth(28),
-        1: const pw.FlexColumnWidth(2),
-        2: const pw.FlexColumnWidth(1.5),
-        3: const pw.FixedColumnWidth(60),
-        4: const pw.FixedColumnWidth(40),
-        5: const pw.FixedColumnWidth(52),
-        6: const pw.FixedColumnWidth(65),
-        7: const pw.FixedColumnWidth(40),
+        1: const pw.FlexColumnWidth(3),
+        2: const pw.FixedColumnWidth(60),
+        3: const pw.FixedColumnWidth(40),
+        4: const pw.FixedColumnWidth(52),
+        5: const pw.FixedColumnWidth(65),
+        6: const pw.FixedColumnWidth(40),
       },
       children: [
         // Header row
@@ -124,7 +130,6 @@ class PdfGenerator {
           children: [
             _tableHeaderCell('#', headerStyle),
             _tableHeaderCell('Vehicle No', headerStyle),
-            _tableHeaderCell('Transporter', headerStyle),
             _tableHeaderCell('Chainage', headerStyle),
             _tableHeaderCell('KM', headerStyle),
             _tableHeaderCell('Rate/KM', headerStyle),
@@ -137,7 +142,6 @@ class PdfGenerator {
               children: [
                 _tableCell('${trip.sNo}', cellStyle),
                 _tableCell(trip.vehicleNo, cellStyle, align: pw.Alignment.centerLeft),
-                _tableCell(trip.transporter, cellStyle, align: pw.Alignment.centerLeft),
                 _tableCell(trip.chainage.toStringAsFixed(0), cellStyle),
                 _tableCell(trip.km.toStringAsFixed(0), cellStyle),
                 _tableCell(trip.ratePerKm.toStringAsFixed(0), cellStyle),
@@ -149,7 +153,6 @@ class PdfGenerator {
         pw.TableRow(
           decoration: const pw.BoxDecoration(color: _headerBg),
           children: [
-            _tableCell('', headerStyle),
             _tableCell('', headerStyle),
             _tableCell('', headerStyle),
             _tableCell('', headerStyle),
