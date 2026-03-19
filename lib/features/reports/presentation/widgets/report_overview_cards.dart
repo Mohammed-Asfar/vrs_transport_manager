@@ -42,8 +42,6 @@ class _ReportOverviewCardsState extends State<ReportOverviewCards> {
       _CardData(
           'Transporters', '${widget.overview.uniqueTransporters}', Icons.person_outline_rounded, null),
       _CardData(
-          'Vehicles', '${widget.overview.uniqueVehicles}', Icons.local_shipping_outlined, null),
-      _CardData(
           'Total Loads', '${widget.overview.totalLoads}', Icons.inventory_2_outlined, null),
       _CardData('Total Amount',
           '₹${widget.overview.totalAmount.toStringAsFixed(0)}', Icons.payments_outlined, AppColors.accent),

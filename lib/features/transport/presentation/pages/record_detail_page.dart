@@ -296,12 +296,16 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
                   color: WidgetStateProperty.all(AppColors.surfaceSecondary),
                   cells: [
                     const DataCell(Text('')),
-                    const DataCell(Text('')),
+                    DataCell(Text(
+                      'Total',
+                      style: AppTextStyles.tableHeader
+                          .copyWith(fontWeight: FontWeight.w600),
+                    )),
                     const DataCell(Text('')),
                     const DataCell(Text('')),
                     const DataCell(Text('')),
                     DataCell(Text(
-                      'Total',
+                      '₹${record.totalAmount.toStringAsFixed(0)}',
                       style: AppTextStyles.tableHeader
                           .copyWith(color: AppColors.accent),
                     )),
@@ -337,16 +341,57 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
           const Divider(height: 0.5),
           Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Amount table
-                Expanded(
-                  flex: 2,
-                  child: _buildAmountTable(record),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Vertical breakdown
+                  Expanded(
+                    flex: 2,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceSecondary,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.separator, width: 0.5),
+                    ),
+                    child: Column(
+                      children: [
+                        _financialRow('Total Amount',
+                            '₹${record.totalAmount.toStringAsFixed(0)}'),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Divider(height: 0.5),
+                        ),
+                        _financialRow('Diesel',
+                            '- ₹${record.diesel.toStringAsFixed(0)}',
+                            color: AppColors.textSecondary),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 8),
+                          child: Divider(height: 0.5),
+                        ),
+                        _financialRow('Advance',
+                            '- ₹${record.advance.toStringAsFixed(0)}',
+                            color: AppColors.textSecondary),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          child: Divider(height: 1),
+                        ),
+                        _financialRow(
+                          'Balance',
+                          '₹${record.balance.toStringAsFixed(0)}',
+                          color: record.balance >= 0
+                              ? AppColors.accent
+                              : AppColors.error,
+                          isBold: true,
+                          isLarge: true,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 24),
-                // Summary
+                // Advance & Balance summary
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -357,6 +402,8 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
                           Border.all(color: AppColors.separator, width: 0.5),
                     ),
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         _summaryItem('Advance',
                             '₹${record.advance.toStringAsFixed(0)}'),
@@ -369,14 +416,15 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
                           '₹${record.balance.toStringAsFixed(0)}',
                           isLarge: true,
                           color: record.balance >= 0
-                              ? AppColors.success
+                              ? AppColors.accent
                               : AppColors.error,
                         ),
                       ],
                     ),
                   ),
                 ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -384,57 +432,28 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
     );
   }
 
-  Widget _buildAmountTable(TransportRecord record) {
-    return SizedBox(
-      width: double.infinity,
-      child: DataTable(
-        columnSpacing: 20,
-        horizontalMargin: 12,
-        headingRowHeight: 36,
-        dataRowMinHeight: 34,
-        dataRowMaxHeight: 40,
-        border: TableBorder(
-          horizontalInside:
-              BorderSide(color: AppColors.separatorLight, width: 0.5),
-          top: BorderSide(color: AppColors.separator, width: 0.5),
-          bottom: BorderSide(color: AppColors.separator, width: 0.5),
-        ),
-        columns: const [
-          DataColumn(label: Text('Amount')),
-          DataColumn(label: Text('Diesel')),
-          DataColumn(label: Text('Balance')),
-        ],
-        rows: [
-          ...record.trips.map((trip) {
-            final tripTotal = trip.amountPerTrip * trip.noOfLoads;
-            return DataRow(cells: [
-              DataCell(Text('₹${tripTotal.toStringAsFixed(0)}')),
-              const DataCell(Text('')),
-              DataCell(Text('₹${tripTotal.toStringAsFixed(0)}')),
-            ]);
-          }),
-          DataRow(
-            color: WidgetStateProperty.all(AppColors.surfaceSecondary),
-            cells: [
-              DataCell(Text(
-                '₹${record.totalAmount.toStringAsFixed(0)}',
-                style: AppTextStyles.tableHeader
-                    .copyWith(color: AppColors.accent),
-              )),
-              DataCell(Text(
-                record.diesel.toStringAsFixed(0),
-                style: AppTextStyles.tableHeader
-                    .copyWith(color: AppColors.accent),
-              )),
-              DataCell(Text(
-                '₹${record.totalAmount.toStringAsFixed(0)}',
-                style: AppTextStyles.tableHeader
-                    .copyWith(color: AppColors.accent),
-              )),
-            ],
+  Widget _financialRow(String label, String value,
+      {Color? color, bool isBold = false, bool isLarge = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: (isLarge ? AppTextStyles.heading3 : AppTextStyles.body)
+              .copyWith(
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.normal,
+            color: color ?? AppColors.textPrimary,
           ),
-        ],
-      ),
+        ),
+        Text(
+          value,
+          style: (isLarge ? AppTextStyles.heading3 : AppTextStyles.body)
+              .copyWith(
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.normal,
+            color: color ?? AppColors.textPrimary,
+          ),
+        ),
+      ],
     );
   }
 

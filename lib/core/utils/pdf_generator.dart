@@ -22,8 +22,8 @@ class PdfGenerator {
 
     final bold = pw.TextStyle(font: fontBold, fontFallback: [font]);
     final smallBold = pw.TextStyle(fontSize: 9, font: fontBold, fontFallback: [font], color: _darkText);
-    final small = pw.TextStyle(fontSize: 9, font: font, fontFallback: [fontBold], color: _darkText);
-    final smallMuted = pw.TextStyle(fontSize: 9, font: font, fontFallback: [fontBold], color: _mutedText);
+    final small = pw.TextStyle(fontSize: 9, font: font, fontFallback: [font], color: _darkText);
+    final smallMuted = pw.TextStyle(fontSize: 9, font: font, fontFallback: [font], color: _mutedText);
 
     pdf.addPage(
       pw.Page(
@@ -116,11 +116,11 @@ class PdfGenerator {
       border: pw.TableBorder.all(color: _borderColor, width: 0.5),
       columnWidths: {
         0: const pw.FixedColumnWidth(28),
-        1: const pw.FlexColumnWidth(3),
+        1: const pw.FlexColumnWidth(2),
         2: const pw.FixedColumnWidth(60),
         3: const pw.FixedColumnWidth(40),
         4: const pw.FixedColumnWidth(52),
-        5: const pw.FixedColumnWidth(65),
+        5: const pw.FixedColumnWidth(75),
         6: const pw.FixedColumnWidth(40),
       },
       children: [
@@ -154,7 +154,7 @@ class PdfGenerator {
           decoration: const pw.BoxDecoration(color: _headerBg),
           children: [
             _tableCell('', headerStyle),
-            _tableCell('', headerStyle),
+            _tableHeaderCell('Total', headerStyle),
             _tableCell('', headerStyle),
             _tableCell('', headerStyle),
             _tableCell('', headerStyle),

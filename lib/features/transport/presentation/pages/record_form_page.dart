@@ -357,7 +357,17 @@ class _RecordFormPageState extends State<RecordFormPage> {
             ),
             child: Row(
               children: [
-                const Expanded(flex: 10, child: SizedBox()),
+                const Expanded(flex: 1, child: SizedBox()),
+                Expanded(
+                  flex: 3,
+                  child: Text(
+                    'Total',
+                    style: AppTextStyles.tableCell.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const Expanded(flex: 6, child: SizedBox()),
                 Expanded(
                   flex: 2,
                   child: Text(

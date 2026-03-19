@@ -1,33 +1,34 @@
 import 'package:equatable/equatable.dart';
 
-enum ReportViewMode { transporter, vehicle }
-
 enum DateRangePreset { thisWeek, lastWeek, thisMonth, custom }
 
 class ReportConfig extends Equatable {
   final DateTime startDate;
   final DateTime endDate;
-  final ReportViewMode viewMode;
   final DateRangePreset preset;
+  final String? selectedTransporter;
 
   const ReportConfig({
     required this.startDate,
     required this.endDate,
-    required this.viewMode,
     required this.preset,
+    this.selectedTransporter,
   });
 
   ReportConfig copyWith({
     DateTime? startDate,
     DateTime? endDate,
-    ReportViewMode? viewMode,
     DateRangePreset? preset,
+    String? selectedTransporter,
+    bool clearSelectedTransporter = false,
   }) {
     return ReportConfig(
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
-      viewMode: viewMode ?? this.viewMode,
       preset: preset ?? this.preset,
+      selectedTransporter: clearSelectedTransporter
+          ? null
+          : (selectedTransporter ?? this.selectedTransporter),
     );
   }
 
@@ -39,7 +40,6 @@ class ReportConfig extends Equatable {
     return ReportConfig(
       startDate: DateTime(monday.year, monday.month, monday.day),
       endDate: DateTime(sunday.year, sunday.month, sunday.day, 23, 59, 59),
-      viewMode: ReportViewMode.transporter,
       preset: DateRangePreset.thisWeek,
     );
   }
@@ -47,9 +47,9 @@ class ReportConfig extends Equatable {
   /// Resolve dates for a given preset
   factory ReportConfig.fromPreset(
     DateRangePreset preset, {
-    ReportViewMode viewMode = ReportViewMode.transporter,
     DateTime? customStart,
     DateTime? customEnd,
+    String? selectedTransporter,
   }) {
     final now = DateTime.now();
     DateTime start;
@@ -79,11 +79,11 @@ class ReportConfig extends Equatable {
     return ReportConfig(
       startDate: start,
       endDate: end,
-      viewMode: viewMode,
       preset: preset,
+      selectedTransporter: selectedTransporter,
     );
   }
 
   @override
-  List<Object> get props => [startDate, endDate, viewMode, preset];
+  List<Object?> get props => [startDate, endDate, preset, selectedTransporter];
 }

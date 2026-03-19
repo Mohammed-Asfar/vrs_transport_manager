@@ -39,7 +39,7 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
     } else {
       widget.onChanged(ReportConfig.fromPreset(
         preset,
-        viewMode: widget.config.viewMode,
+        selectedTransporter: widget.config.selectedTransporter,
       ));
     }
   }

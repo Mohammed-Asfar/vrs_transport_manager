@@ -23,10 +23,24 @@ class GenerateReportUseCase {
   }
 
   ReportData _aggregate(List<TransportRecord> records, ReportConfig config) {
+    // Extract all unique transporter names before filtering
+    final availableTransporters = records
+        .map((r) => r.transporter)
+        .toSet()
+        .toList()
+      ..sort();
+
+    // Filter by selected transporter if specified
+    final filteredRecords = config.selectedTransporter != null
+        ? records
+            .where((r) => r.transporter == config.selectedTransporter)
+            .toList()
+        : records;
+
     // Flatten all trips, tagging each with parent record info
     final allTaggedTrips = <_TaggedTrip>[];
 
-    for (final record in records) {
+    for (final record in filteredRecords) {
       for (final trip in record.trips) {
         final tripAmount = trip.amountPerTrip * trip.noOfLoads;
         // Proportional diesel/advance allocation
@@ -60,12 +74,10 @@ class GenerateReportUseCase {
       }
     }
 
-    // Group by key
+    // Group by transporter
     final groupMap = <String, List<_TaggedTrip>>{};
     for (final tagged in allTaggedTrips) {
-      final key = config.viewMode == ReportViewMode.transporter
-          ? tagged.reportTrip.transporter
-          : tagged.reportTrip.vehicleNo;
+      final key = tagged.reportTrip.transporter;
       groupMap.putIfAbsent(key, () => []).add(tagged);
     }
 
@@ -102,18 +114,23 @@ class GenerateReportUseCase {
     }
 
     final overview = ReportOverview(
-      totalRecords: records.length,
+      totalRecords: filteredRecords.length,
       totalTrips: allTaggedTrips.length,
-      totalLoads: records.fold<int>(0, (sum, r) => sum + r.totalLoads),
-      totalAmount: records.fold<double>(0, (sum, r) => sum + r.totalAmount),
-      totalDiesel: records.fold<double>(0, (sum, r) => sum + r.diesel),
-      totalAdvance: records.fold<double>(0, (sum, r) => sum + r.advance),
-      totalBalance: records.fold<double>(0, (sum, r) => sum + r.balance),
+      totalLoads: filteredRecords.fold<int>(0, (sum, r) => sum + r.totalLoads),
+      totalAmount: filteredRecords.fold<double>(0, (sum, r) => sum + r.totalAmount),
+      totalDiesel: filteredRecords.fold<double>(0, (sum, r) => sum + r.diesel),
+      totalAdvance: filteredRecords.fold<double>(0, (sum, r) => sum + r.advance),
+      totalBalance: filteredRecords.fold<double>(0, (sum, r) => sum + r.balance),
       uniqueTransporters: uniqueTransporters.length,
       uniqueVehicles: uniqueVehicles.length,
     );
 
-    return ReportData(config: config, overview: overview, groups: groups);
+    return ReportData(
+      config: config,
+      overview: overview,
+      groups: groups,
+      availableTransporters: availableTransporters,
+    );
   }
 }
 

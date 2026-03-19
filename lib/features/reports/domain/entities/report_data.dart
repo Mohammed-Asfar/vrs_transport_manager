@@ -5,15 +5,17 @@ class ReportData extends Equatable {
   final ReportConfig config;
   final ReportOverview overview;
   final List<ReportGroup> groups;
+  final List<String> availableTransporters;
 
   const ReportData({
     required this.config,
     required this.overview,
     required this.groups,
+    required this.availableTransporters,
   });
 
   @override
-  List<Object> get props => [config, overview, groups];
+  List<Object> get props => [config, overview, groups, availableTransporters];
 }
 
 class ReportOverview extends Equatable {

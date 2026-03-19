@@ -11,7 +11,7 @@ import 'package:vrs_transport_manager/features/reports/presentation/widgets/date
 import 'package:vrs_transport_manager/features/reports/presentation/widgets/report_empty_state.dart';
 import 'package:vrs_transport_manager/features/reports/presentation/widgets/report_group_table.dart';
 import 'package:vrs_transport_manager/features/reports/presentation/widgets/report_overview_cards.dart';
-import 'package:vrs_transport_manager/features/reports/presentation/widgets/view_mode_toggle.dart';
+import 'package:vrs_transport_manager/features/reports/presentation/widgets/transporter_filter.dart';
 
 class ReportPage extends StatefulWidget {
   const ReportPage({super.key});
@@ -22,11 +22,16 @@ class ReportPage extends StatefulWidget {
 
 class _ReportPageState extends State<ReportPage> {
   late ReportConfig _config;
+  List<String> _availableTransporters = [];
 
   @override
   void initState() {
     super.initState();
     _config = context.read<ReportBloc>().state.config;
+    // Auto-generate report on page load to populate transporter dropdown
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _generate();
+    });
   }
 
   void _updateConfig(ReportConfig config) {
@@ -143,17 +148,45 @@ class _ReportPageState extends State<ReportPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            DateRangeSelector(
-              config: _config,
-              onChanged: _updateConfig,
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DateRangeSelector(
+                      config: _config,
+                      onChanged: _updateConfig,
+                    ),
+                    const SizedBox(height: 24),
+                    BlocBuilder<ReportBloc, ReportState>(
+                      builder: (context, state) {
+                        if (state is ReportLoaded) {
+                          _availableTransporters =
+                              state.data.availableTransporters;
+                        } else if (state is ReportExporting) {
+                          _availableTransporters =
+                              state.data.availableTransporters;
+                        }
+                        return TransporterFilter(
+                          selectedTransporter: _config.selectedTransporter,
+                          availableTransporters: _availableTransporters,
+                          onChanged: (value) {
+                            if (value == null) {
+                              _updateConfig(_config.copyWith(
+                                  clearSelectedTransporter: true));
+                            } else {
+                              _updateConfig(_config.copyWith(
+                                  selectedTransporter: value));
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 24),
-            ViewModeToggle(
-              viewMode: _config.viewMode,
-              onChanged: (mode) =>
-                  _updateConfig(_config.copyWith(viewMode: mode)),
-            ),
-            const Spacer(),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               height: 40,
@@ -299,10 +332,10 @@ class _LoadingSkeleton extends StatelessWidget {
           // Skeleton stat cards
           Row(
             children: List.generate(
-              6,
+              5,
               (i) => Expanded(
                 child: Padding(
-                  padding: EdgeInsets.only(right: i < 5 ? 10 : 0),
+                  padding: EdgeInsets.only(right: i < 4 ? 10 : 0),
                   child: Container(
                     height: 72,
                     decoration: BoxDecoration(

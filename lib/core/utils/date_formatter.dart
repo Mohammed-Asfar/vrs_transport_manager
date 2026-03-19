@@ -20,7 +20,7 @@ class DateFormatter {
 
   /// Format: "01 Mar 2026 – 15 Mar 2026"
   static String toRange(DateTime start, DateTime end) =>
-      '${_rangeFormat.format(start)} – ${_rangeFormat.format(end)}';
+      '${_rangeFormat.format(start)} - ${_rangeFormat.format(end)}';
 
   /// Parse from display format: 14.03.2026
   static DateTime? fromDisplay(String dateStr) {

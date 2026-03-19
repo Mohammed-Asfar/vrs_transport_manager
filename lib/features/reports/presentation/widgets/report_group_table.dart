@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:vrs_transport_manager/core/theme/app_colors.dart';
 import 'package:vrs_transport_manager/core/theme/app_text_styles.dart';
 import 'package:vrs_transport_manager/core/utils/date_formatter.dart';
-import 'package:vrs_transport_manager/features/reports/domain/entities/report_config.dart';
 import 'package:vrs_transport_manager/features/reports/domain/entities/report_data.dart';
 
 class ReportGroupTable extends StatelessWidget {
@@ -12,10 +11,6 @@ class ReportGroupTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isTransporter =
-        data.config.viewMode == ReportViewMode.transporter;
-    final groupLabel = isTransporter ? 'Transporter' : 'Vehicle No';
-
     return Column(
       children: [
         // Column header
@@ -34,7 +29,7 @@ class ReportGroupTable extends StatelessWidget {
               Expanded(
                   flex: 3,
                   child:
-                      Text(groupLabel, style: AppTextStyles.tableHeader)),
+                      Text('Transporter', style: AppTextStyles.tableHeader)),
               Expanded(
                   child:
                       Text('Trips', style: AppTextStyles.tableHeader)),
@@ -59,19 +54,18 @@ class ReportGroupTable extends StatelessWidget {
         // Group rows
         Expanded(
           child: ListView.builder(
-            itemCount: data.groups.length + 1, // +1 for totals
+            itemCount: data.groups.length,
             itemBuilder: (context, index) {
-              if (index == data.groups.length) {
-                return _TotalsRow(overview: data.overview);
-              }
               return _GroupRow(
                 group: data.groups[index],
-                isTransporter: isTransporter,
                 isLast: index == data.groups.length - 1,
               );
             },
           ),
         ),
+
+        // Totals row (fixed at bottom)
+        _TotalsRow(overview: data.overview),
       ],
     );
   }
@@ -79,12 +73,10 @@ class ReportGroupTable extends StatelessWidget {
 
 class _GroupRow extends StatefulWidget {
   final ReportGroup group;
-  final bool isTransporter;
   final bool isLast;
 
   const _GroupRow({
     required this.group,
-    required this.isTransporter,
     required this.isLast,
   });
 
@@ -182,10 +174,7 @@ class _GroupRowState extends State<_GroupRow>
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
           child: _expanded
-              ? _ExpandedTrips(
-                  group: widget.group,
-                  isTransporter: widget.isTransporter,
-                )
+              ? _ExpandedTrips(group: widget.group)
               : const SizedBox.shrink(),
         ),
       ],
@@ -195,17 +184,11 @@ class _GroupRowState extends State<_GroupRow>
 
 class _ExpandedTrips extends StatelessWidget {
   final ReportGroup group;
-  final bool isTransporter;
 
-  const _ExpandedTrips({
-    required this.group,
-    required this.isTransporter,
-  });
+  const _ExpandedTrips({required this.group});
 
   @override
   Widget build(BuildContext context) {
-    final otherLabel = isTransporter ? 'Vehicle' : 'Transporter';
-
     return Container(
       margin: const EdgeInsets.only(left: 28, right: 8, bottom: 4),
       decoration: BoxDecoration(
@@ -227,7 +210,7 @@ class _ExpandedTrips extends StatelessWidget {
               children: [
                 _subHeader('Date', flex: 2),
                 _subHeader('Location', flex: 2),
-                _subHeader(otherLabel, flex: 2),
+                _subHeader('Vehicle', flex: 2),
                 _subHeader('KM'),
                 _subHeader('Rate'),
                 _subHeader('Amount'),
@@ -239,8 +222,6 @@ class _ExpandedTrips extends StatelessWidget {
           ...group.trips.asMap().entries.map((entry) {
             final trip = entry.value;
             final isLast = entry.key == group.trips.length - 1;
-            final otherValue =
-                isTransporter ? trip.vehicleNo : trip.transporter;
 
             return Container(
               height: 32,
@@ -256,7 +237,7 @@ class _ExpandedTrips extends StatelessWidget {
                 children: [
                   _subCell(DateFormatter.toDisplay(trip.date), flex: 2),
                   _subCell(trip.location, flex: 2),
-                  _subCell(otherValue, flex: 2),
+                  _subCell(trip.vehicleNo, flex: 2),
                   _subCell(trip.km.toStringAsFixed(0)),
                   _subCell(trip.ratePerKm.toStringAsFixed(0)),
                   _subCell('₹${trip.amountPerTrip.toStringAsFixed(0)}'),

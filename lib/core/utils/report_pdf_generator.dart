@@ -23,29 +23,31 @@ class ReportPdfGenerator {
 
     final bold = pw.TextStyle(font: fontBold, fontFallback: [font]);
     final smallBold = pw.TextStyle(
-        fontSize: 9, font: fontBold, fontFallback: [font], color: _darkText);
+        fontSize: 7.5, font: fontBold, fontFallback: [font], color: _darkText);
     final small = pw.TextStyle(
-        fontSize: 9, font: font, fontFallback: [fontBold], color: _darkText);
+        fontSize: 7.5, font: font, fontFallback: [fontBold], color: _darkText);
     final smallMuted = pw.TextStyle(
-        fontSize: 9, font: font, fontFallback: [fontBold], color: _mutedText);
+        fontSize: 7.5, font: font, fontFallback: [fontBold], color: _mutedText);
 
-    // Page 1: Summary
-    pdf.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(48),
-        build: (context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            _buildHeader(data),
-            pw.SizedBox(height: 24),
-            _buildOverviewGrid(data.overview, smallBold, small),
-            pw.SizedBox(height: 24),
-            _buildSummaryTable(data, smallBold, small),
-          ],
+    // Page 1: Summary (only for All Transporters)
+    if (data.config.selectedTransporter == null) {
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(48),
+          build: (context) => pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              _buildHeader(data),
+              pw.SizedBox(height: 24),
+              _buildOverviewGrid(data.overview, smallBold, small),
+              pw.SizedBox(height: 24),
+              _buildSummaryTable(data, smallBold, small),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    }
 
     // Page 2+: One multi-page section per group
     for (final group in data.groups) {
@@ -76,9 +78,9 @@ class ReportPdfGenerator {
   // ─── Header ───
 
   static pw.Widget _buildHeader(ReportData data) {
-    final viewLabel = data.config.viewMode == ReportViewMode.transporter
-        ? 'Transporter-wise'
-        : 'Vehicle-wise';
+    final filterLabel = data.config.selectedTransporter != null
+        ? 'Transporter: ${data.config.selectedTransporter}'
+        : 'All Transporters';
 
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 16),
@@ -109,7 +111,7 @@ class ReportPdfGenerator {
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
-              pw.Text(viewLabel,
+              pw.Text(filterLabel,
                   style: pw.TextStyle(
                       fontSize: 9,
                       color: _mutedText,
@@ -147,7 +149,6 @@ class ReportPdfGenerator {
         children: [
           _overviewItem('Records', '${overview.totalRecords}', boldStyle, normalStyle),
           _overviewItem('Transporters', '${overview.uniqueTransporters}', boldStyle, normalStyle),
-          _overviewItem('Vehicles', '${overview.uniqueVehicles}', boldStyle, normalStyle),
           _overviewItem('Total Loads', '${overview.totalLoads}', boldStyle, normalStyle),
           _overviewItem('Total Amount', '₹${overview.totalAmount.toStringAsFixed(0)}',
               boldStyle.copyWith(color: _accent), normalStyle),
@@ -180,9 +181,7 @@ class ReportPdfGenerator {
     pw.TextStyle headerStyle,
     pw.TextStyle cellStyle,
   ) {
-    final isTransporter =
-        data.config.viewMode == ReportViewMode.transporter;
-    final groupLabel = isTransporter ? 'Transporter' : 'Vehicle No';
+    const groupLabel = 'Transporter';
 
     return pw.Table(
       border: pw.TableBorder.all(color: _borderColor, width: 0.5),
@@ -258,9 +257,7 @@ class ReportPdfGenerator {
     ReportConfig config,
     pw.TextStyle bold,
   ) {
-    final typeLabel = config.viewMode == ReportViewMode.transporter
-        ? 'Transporter'
-        : 'Vehicle';
+    const typeLabel = 'Transporter';
 
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: 12),
@@ -299,23 +296,20 @@ class ReportPdfGenerator {
     pw.TextStyle headerStyle,
     pw.TextStyle cellStyle,
   ) {
-    final isTransporter =
-        config.viewMode == ReportViewMode.transporter;
-    // Show the "other" field: if grouped by transporter, show vehicle; vice versa
-    final otherLabel = isTransporter ? 'Vehicle No' : 'Transporter';
+    const otherLabel = 'Vehicle No';
 
     return pw.Table(
       border: pw.TableBorder.all(color: _borderColor, width: 0.5),
       columnWidths: {
-        0: const pw.FixedColumnWidth(28),
-        1: const pw.FixedColumnWidth(65),
-        2: const pw.FixedColumnWidth(60),
-        3: const pw.FlexColumnWidth(1.5),
-        4: const pw.FixedColumnWidth(52),
-        5: const pw.FixedColumnWidth(36),
-        6: const pw.FixedColumnWidth(48),
-        7: const pw.FixedColumnWidth(60),
-        8: const pw.FixedColumnWidth(38),
+        0: const pw.FixedColumnWidth(24),
+        1: const pw.FixedColumnWidth(58),
+        2: const pw.FlexColumnWidth(1.5),
+        3: const pw.FlexColumnWidth(1.2),
+        4: const pw.FixedColumnWidth(48),
+        5: const pw.FixedColumnWidth(32),
+        6: const pw.FixedColumnWidth(45),
+        7: const pw.FixedColumnWidth(52),
+        8: const pw.FixedColumnWidth(34),
       },
       children: [
         pw.TableRow(
@@ -335,8 +329,7 @@ class ReportPdfGenerator {
         ...group.trips.asMap().entries.map((entry) {
           final i = entry.key;
           final trip = entry.value;
-          final otherValue =
-              isTransporter ? trip.vehicleNo : trip.transporter;
+          final otherValue = trip.vehicleNo;
 
           return pw.TableRow(
             children: [
@@ -364,7 +357,7 @@ class ReportPdfGenerator {
             _tableCell('', headerStyle),
             _tableCell('', headerStyle),
             _tableCell('', headerStyle),
-            _tableCell('', headerStyle),
+            _tableHeaderCell('Total', headerStyle),
             _tableHeaderCell(
               '₹${group.totalAmount.toStringAsFixed(0)}',
               headerStyle.copyWith(color: _accent),

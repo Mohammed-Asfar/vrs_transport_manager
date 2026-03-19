@@ -105,6 +105,14 @@ class TransportBloc extends Bloc<TransportEvent, TransportState> {
       (failure) => emit(TransportError(failure.message)),
       (_) => emit(const TransportOperationSuccess('Record deleted successfully')),
     );
+    // Reload records so the list refreshes immediately
+    if (result.isRight()) {
+      final records = await _getRecords();
+      records.fold(
+        (_) {},
+        (data) => emit(TransportLoaded(records: data)),
+      );
+    }
   }
 
   Future<void> _onSearchRecords(

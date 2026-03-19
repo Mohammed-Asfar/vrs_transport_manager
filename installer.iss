@@ -1,6 +1,6 @@
 [Setup]
 AppName=VRS Transport Manager
-AppVersion=1.0.0
+AppVersion=1.1.0
 AppPublisher=VRS Enterprises
 AppPublisherURL=https://vrs-enterprises.com
 AppContact=Asfar
@@ -8,7 +8,7 @@ AppCopyright=Developed by Asfar
 DefaultDirName={autopf}\VRS Transport Manager
 DefaultGroupName=VRS Transport Manager
 OutputDir=installer_output
-OutputBaseFilename=VRS_Transport_Manager_Setup_1.0.0
+OutputBaseFilename=VRS_Transport_Manager_Setup_1.1.0
 Compression=lzma2
 SolidCompression=yes
 SetupIconFile=windows\runner\resources\app_icon.ico
