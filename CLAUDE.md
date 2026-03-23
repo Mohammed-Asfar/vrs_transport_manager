@@ -72,13 +72,16 @@ Four BLoCs:
 
 ## UI Design
 
-macOS-inspired dark theme with Material 3:
-- Dark background (`#1E1E1E`), accent blue (`#0A84FF`), surface colors (`#2D2D2D`, `#383838`)
-- **Left sidebar navigation** (200px expanded panel): `MainShell` (`core/widgets/main_shell.dart`) wraps all authenticated pages via GoRouter `ShellRoute`. Sidebar contains logo, module nav (Transport, Machinery, Reports), and sign-out. Sidebar colors: `sidebarBg` (`#252525`), `sidebarActiveItem`.
-- Flat design: elevation 0, 6-8px border radius
-- System font: Segoe UI on Windows (SF Pro equivalent)
-- Typography: 11 levels from heading1 (26px) to caption (11px), defined in `app_text_styles.dart`
+Warm professional design system (Slack/Figma-inspired) with Material 3, supporting **light + dark modes**:
+- **Theme system**: `AppColorScheme` (`ThemeExtension`) with semantic tokens. Access via `AppColors.of(context)`. Light theme (warm cream `#FAF8F5`) and dark theme (warm dark `#1C1B1A`). Teal accent (`#0D9488`).
+- **Theme persistence**: `shared_preferences` stores theme choice. Toggle in sidebar. `themeModeNotifier` (global `ValueNotifier<ThemeMode>`) in `main.dart`.
+- **Left sidebar navigation** (220px): `MainShell` (`core/widgets/main_shell.dart`) wraps authenticated pages. `SidebarNavItem` with 3px teal left indicator bar for active state. Includes theme toggle (sun/moon) above Sign Out.
+- **Spacing**: `AppSpacing` constants — 8px border radius (small), 12px (medium/cards), 16px (large/dialogs). Toolbar 56px, table rows 48px, buttons 36px/32px.
+- Flat design: elevation 0, warm colors
+- System font: Segoe UI on Windows
+- Typography: 11 levels from heading1 (26px) to caption (11px), color-agnostic (defined in `app_text_styles.dart`, colors applied at usage site)
 - Asset: `assets/logo_512.png` (app logo)
+- **Shared widgets**: `AppToolbar`, `QuickStatsStrip`, `FormSection`, `FinancialSummaryCard`, `SidebarNavItem` in `core/widgets/`
 
 ## Versioning & Installer
 
@@ -99,4 +102,4 @@ Follow the existing pattern: create `data/`, `domain/`, `presentation/` director
 
 ## Tech Stack
 
-Flutter (Dart 3.11+), flutter_bloc, go_router, firebase_core/auth/cloud_firestore, dartz, get_it, equatable, pdf + printing, intl, url_launcher
+Flutter (Dart 3.11+), flutter_bloc, go_router, firebase_core/auth/cloud_firestore, dartz, get_it, equatable, pdf + printing, intl, url_launcher, shared_preferences
