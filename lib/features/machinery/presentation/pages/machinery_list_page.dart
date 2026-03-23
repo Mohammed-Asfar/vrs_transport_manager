@@ -58,18 +58,6 @@ class _MachineryListPageState extends State<MachineryListPage> {
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 28,
-            height: 28,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              iconSize: 18,
-              icon: const Icon(Icons.arrow_back_rounded,
-                  color: AppColors.accent),
-              onPressed: () => context.pop(),
-            ),
-          ),
-          const SizedBox(width: 8),
           const Icon(Icons.construction_outlined,
               size: 20, color: AppColors.accent),
           const SizedBox(width: 8),

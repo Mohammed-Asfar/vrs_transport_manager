@@ -5,8 +5,6 @@ import 'package:vrs_transport_manager/core/theme/app_colors.dart';
 import 'package:vrs_transport_manager/core/theme/app_text_styles.dart';
 import 'package:vrs_transport_manager/core/utils/date_formatter.dart';
 import 'package:vrs_transport_manager/core/widgets/confirmation_dialog.dart';
-import 'package:vrs_transport_manager/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:vrs_transport_manager/features/auth/presentation/bloc/auth_event.dart';
 import 'package:vrs_transport_manager/features/transport/domain/entities/transport_record.dart';
 import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_bloc.dart';
 import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_event.dart';
@@ -54,7 +52,7 @@ class _DashboardPageState extends State<DashboardPage> {
   /// macOS Finder-style toolbar.
   Widget _buildToolbar() {
     return Container(
-      height: 64,
+      height: 52,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: const BoxDecoration(
         color: AppColors.toolbar,
@@ -64,25 +62,11 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(5),
-            child: Image.asset('assets/logo_512.png', width: 32, height: 32),
-          ),
+          const Icon(Icons.local_shipping_outlined,
+              size: 20, color: AppColors.accent),
           const SizedBox(width: 8),
-          Text(
-            'VRS Enterprises',
-            style: AppTextStyles.heading3.copyWith(fontWeight: FontWeight.w600),
-          ),
-          Text(
-            '  –  Transport Manager',
-            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-          ),
+          Text('Transport', style: AppTextStyles.heading3),
           const Spacer(),
-          Text(
-            'Developed by Asfar',
-            style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
-          ),
-          const SizedBox(width: 16),
 
           // Search
           SizedBox(
@@ -156,38 +140,6 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
           const SizedBox(width: 12),
 
-          // Machinery
-          SizedBox(
-            height: 36,
-            child: OutlinedButton.icon(
-              onPressed: () => context.push('/machinery'),
-              icon: const Icon(Icons.construction_outlined, size: 16),
-              label: const Text('Machinery'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                textStyle: AppTextStyles.button,
-                side: const BorderSide(color: AppColors.border, width: 0.5),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Reports
-          SizedBox(
-            height: 36,
-            child: OutlinedButton.icon(
-              onPressed: () => context.push('/reports'),
-              icon: const Icon(Icons.summarize_outlined, size: 16),
-              label: const Text('Reports'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                textStyle: AppTextStyles.button,
-                side: const BorderSide(color: AppColors.border, width: 0.5),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
           // New Record
           SizedBox(
             height: 36,
@@ -199,33 +151,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 textStyle: AppTextStyles.button,
               ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Sign Out
-          SizedBox(
-            width: 36,
-            height: 36,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              iconSize: 20,
-              icon: const Icon(Icons.logout_rounded,
-                  color: AppColors.textSecondary),
-              tooltip: 'Sign Out',
-              onPressed: () async {
-                final confirm = await ConfirmationDialog.show(
-                  context,
-                  title: 'Sign Out',
-                  message: 'Are you sure you want to sign out?',
-                  confirmText: 'Sign Out',
-                  confirmColor: AppColors.error,
-                  icon: Icons.logout_rounded,
-                );
-                if (confirm == true && mounted) {
-                  context.read<AuthBloc>().add(const AuthLogoutRequested());
-                }
-              },
             ),
           ),
         ],

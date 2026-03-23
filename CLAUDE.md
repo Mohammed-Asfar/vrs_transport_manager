@@ -49,7 +49,7 @@ Each feature follows: `data/` (datasources, models, repository impls) → `domai
 - **Error handling**: `Either<Failure, T>` from dartz — no exceptions propagate from repositories. Failure types: `ServerFailure`, `AuthFailure`, `CacheFailure`.
 - **Auto-calculation**: `TransportRecord.create()`, `TripEntry.create()`, and `MachineryRecord.create()` factory constructors compute totals (totalLoads, totalAmount, balance, amountPerTrip) — never set these manually.
 - **DI**: GetIt with lazy singletons for services/repos and factories for BLoCs. All wiring in `di/injection_container.dart`.
-- **Routing**: GoRouter with auth-based redirects via `_AuthNotifier`. Protected routes require `AuthAuthenticated` state. Routes: `/splash`, `/login`, `/` (dashboard), `/reports`, `/create`, `/edit/:id`, `/detail/:id`, `/machinery`, `/machinery/create`, `/machinery/edit/:id`, `/machinery/detail/:id`. Edit routes lazy-load record data using their respective `GetRecordByIdUseCase`.
+- **Routing**: GoRouter with auth-based redirects via `_AuthNotifier`. Protected routes require `AuthAuthenticated` state. All authenticated routes are wrapped in a `ShellRoute` that provides the persistent sidebar (`MainShell`). Routes: `/splash`, `/login`, `/` (dashboard), `/reports`, `/create`, `/edit/:id`, `/detail/:id`, `/machinery`, `/machinery/create`, `/machinery/edit/:id`, `/machinery/detail/:id`. Edit routes lazy-load record data using their respective `GetRecordByIdUseCase`. Shell routes use `CustomTransitionPage` with a 150ms crossfade (no slide/pop).
 - **Real-time updates**: `TransportRepository.watchRecords()` streams live Firestore changes to the UI. TransportBloc handles this without overwriting active search results.
 - **Search**: Client-side filtering (Firestore limitation) on location, vehicle numbers, and transporter names.
 - **PDF export**: Three generators — `PdfGenerator` for transport records, `MachineryPdfGenerator` for machinery records, `ReportPdfGenerator` for aggregated reports. All use Noto Sans font for rupee symbol (₹) support.
@@ -74,6 +74,7 @@ Four BLoCs:
 
 macOS-inspired dark theme with Material 3:
 - Dark background (`#1E1E1E`), accent blue (`#0A84FF`), surface colors (`#2D2D2D`, `#383838`)
+- **Left sidebar navigation** (200px expanded panel): `MainShell` (`core/widgets/main_shell.dart`) wraps all authenticated pages via GoRouter `ShellRoute`. Sidebar contains logo, module nav (Transport, Machinery, Reports), and sign-out. Sidebar colors: `sidebarBg` (`#252525`), `sidebarActiveItem`.
 - Flat design: elevation 0, 6-8px border radius
 - System font: Segoe UI on Windows (SF Pro equivalent)
 - Typography: 11 levels from heading1 (26px) to caption (11px), defined in `app_text_styles.dart`

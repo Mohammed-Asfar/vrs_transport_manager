@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 import 'package:vrs_transport_manager/core/theme/app_colors.dart';
 import 'package:vrs_transport_manager/core/theme/app_text_styles.dart';
 import 'package:vrs_transport_manager/features/reports/domain/entities/report_config.dart';
@@ -74,19 +73,10 @@ class _ReportPageState extends State<ReportPage> {
       ),
       child: Row(
         children: [
-          SizedBox(
-            width: 32,
-            height: 32,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              iconSize: 18,
-              icon: const Icon(Icons.arrow_back_rounded,
-                  color: AppColors.accent),
-              onPressed: () => context.pop(),
-            ),
-          ),
+          const Icon(Icons.summarize_outlined,
+              size: 20, color: AppColors.accent),
           const SizedBox(width: 8),
-          Text('Summary Report', style: AppTextStyles.heading3),
+          Text('Reports', style: AppTextStyles.heading3),
           const Spacer(),
           BlocBuilder<ReportBloc, ReportState>(
             builder: (context, state) {
