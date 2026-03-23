@@ -34,6 +34,7 @@ lib/
 ├── features/
 │   ├── auth/       # Firebase Auth (email/password login only)
 │   ├── transport/  # Transport records CRUD + search + PDF export
+│   ├── machinery/  # Machinery records CRUD + search + PDF export (two billing modes)
 │   └── reports/    # Date-range reports with transporter/vehicle grouping + PDF export
 ├── di/             # GetIt service locator (injection_container.dart)
 └── main.dart       # Firebase init → DI setup → BLoC providers → MaterialApp.router
@@ -46,25 +47,27 @@ Each feature follows: `data/` (datasources, models, repository impls) → `domai
 ## Key Patterns
 
 - **Error handling**: `Either<Failure, T>` from dartz — no exceptions propagate from repositories. Failure types: `ServerFailure`, `AuthFailure`, `CacheFailure`.
-- **Auto-calculation**: `TransportRecord.create()` and `TripEntry.create()` factory constructors compute totals (totalLoads, totalAmount, balance, amountPerTrip) — never set these manually.
+- **Auto-calculation**: `TransportRecord.create()`, `TripEntry.create()`, and `MachineryRecord.create()` factory constructors compute totals (totalLoads, totalAmount, balance, amountPerTrip) — never set these manually.
 - **DI**: GetIt with lazy singletons for services/repos and factories for BLoCs. All wiring in `di/injection_container.dart`.
-- **Routing**: GoRouter with auth-based redirects via `_AuthNotifier`. Protected routes require `AuthAuthenticated` state. Routes: `/splash`, `/login`, `/` (dashboard), `/reports`, `/create`, `/edit/:id`, `/detail/:id`. The `/edit/:id` route lazy-loads record data using `GetRecordByIdUseCase`.
+- **Routing**: GoRouter with auth-based redirects via `_AuthNotifier`. Protected routes require `AuthAuthenticated` state. Routes: `/splash`, `/login`, `/` (dashboard), `/reports`, `/create`, `/edit/:id`, `/detail/:id`, `/machinery`, `/machinery/create`, `/machinery/edit/:id`, `/machinery/detail/:id`. Edit routes lazy-load record data using their respective `GetRecordByIdUseCase`.
 - **Real-time updates**: `TransportRepository.watchRecords()` streams live Firestore changes to the UI. TransportBloc handles this without overwriting active search results.
 - **Search**: Client-side filtering (Firestore limitation) on location, vehicle numbers, and transporter names.
-- **PDF export**: Two generators — `PdfGenerator` for individual records, `ReportPdfGenerator` for aggregated reports. Both use Noto Sans font for rupee symbol (₹) support.
+- **PDF export**: Three generators — `PdfGenerator` for transport records, `MachineryPdfGenerator` for machinery records, `ReportPdfGenerator` for aggregated reports. All use Noto Sans font for rupee symbol (₹) support.
 
 ## Firestore
 
 - **Project**: `vrs-transport-db`
 - **Collection**: `transport_records` (ordered by `date` descending) — authenticated users have R/W access
+- **Collection**: `machinery_records` (ordered by `date` descending) — authenticated users have R/W access
 - **Collection**: `app_config`, document `version` — authenticated users have read-only access (used for update checking)
 - **Field constants**: `core/constants/firestore_constants.dart`
 
 ## State Management
 
-Three BLoCs:
+Four BLoCs:
 - **AuthBloc**: `AuthCheckRequested` → monitors Firebase auth stream (with 3s timeout for Windows C++ SDK); `AuthLoginRequested` / `AuthLogoutRequested`
 - **TransportBloc**: Load, Create, Update, Delete, Search, ClearSearch — successful mutations auto-reload the list; subscribes to real-time Firestore stream
+- **MachineryBloc**: Same pattern as TransportBloc. Supports two billing modes: `monthlyRent` (fixed monthly rate) and `perLoad` (ratePerLoad × totalLoads)
 - **ReportBloc**: `ReportGenerate` (date range + view mode), `ReportExportPdf`, `ReportReset` — supports transporter-wise and vehicle-wise grouping with proportional diesel/advance allocation. Preset date filters: thisWeek, lastWeek, thisMonth, custom.
 
 ## UI Design
