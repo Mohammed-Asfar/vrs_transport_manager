@@ -5,31 +5,26 @@ import 'package:vrs_transport_manager/core/theme/app_colors.dart';
 import 'package:vrs_transport_manager/core/theme/app_text_styles.dart';
 import 'package:vrs_transport_manager/core/utils/date_formatter.dart';
 import 'package:vrs_transport_manager/core/widgets/confirmation_dialog.dart';
-import 'package:vrs_transport_manager/features/auth/presentation/bloc/auth_bloc.dart';
-import 'package:vrs_transport_manager/features/auth/presentation/bloc/auth_event.dart';
-import 'package:vrs_transport_manager/features/transport/domain/entities/transport_record.dart';
-import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_bloc.dart';
-import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_event.dart';
-import 'package:vrs_transport_manager/features/transport/presentation/bloc/transport_state.dart';
-import 'package:vrs_transport_manager/core/services/update_checker_service.dart';
+import 'package:vrs_transport_manager/features/machinery/domain/entities/billing_mode.dart';
+import 'package:vrs_transport_manager/features/machinery/domain/entities/machinery_record.dart';
+import 'package:vrs_transport_manager/features/machinery/presentation/bloc/machinery_bloc.dart';
+import 'package:vrs_transport_manager/features/machinery/presentation/bloc/machinery_event.dart';
+import 'package:vrs_transport_manager/features/machinery/presentation/bloc/machinery_state.dart';
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+class MachineryListPage extends StatefulWidget {
+  const MachineryListPage({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  State<MachineryListPage> createState() => _MachineryListPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _MachineryListPageState extends State<MachineryListPage> {
   final _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    context.read<TransportBloc>().add(const TransportLoadRecords());
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      UpdateCheckerService().checkForUpdates(context);
-    });
+    context.read<MachineryBloc>().add(const MachineryLoadRecords());
   }
 
   @override
@@ -51,11 +46,10 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  /// macOS Finder-style toolbar.
   Widget _buildToolbar() {
     return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      height: 52,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: const BoxDecoration(
         color: AppColors.toolbar,
         border: Border(
@@ -64,29 +58,27 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
       child: Row(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(5),
-            child: Image.asset('assets/logo_512.png', width: 32, height: 32),
+          SizedBox(
+            width: 28,
+            height: 28,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              iconSize: 18,
+              icon: const Icon(Icons.arrow_back_rounded,
+                  color: AppColors.accent),
+              onPressed: () => context.pop(),
+            ),
           ),
           const SizedBox(width: 8),
-          Text(
-            'VRS Enterprises',
-            style: AppTextStyles.heading3.copyWith(fontWeight: FontWeight.w600),
-          ),
-          Text(
-            '  –  Transport Manager',
-            style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-          ),
+          const Icon(Icons.construction_outlined,
+              size: 20, color: AppColors.accent),
+          const SizedBox(width: 8),
+          Text('Machinery', style: AppTextStyles.heading3),
           const Spacer(),
-          Text(
-            'Developed by Asfar',
-            style: AppTextStyles.caption.copyWith(color: AppColors.textTertiary),
-          ),
-          const SizedBox(width: 16),
 
           // Search
           SizedBox(
-            width: 280,
+            width: 240,
             height: 36,
             child: TextField(
               controller: _searchController,
@@ -107,8 +99,8 @@ class _DashboardPageState extends State<DashboardPage> {
                         onTap: () {
                           _searchController.clear();
                           context
-                              .read<TransportBloc>()
-                              .add(const TransportClearSearch());
+                              .read<MachineryBloc>()
+                              .add(const MachineryClearSearch());
                           setState(() {});
                         },
                         child: const Padding(
@@ -144,55 +136,23 @@ class _DashboardPageState extends State<DashboardPage> {
                 setState(() {});
                 if (value.trim().isEmpty) {
                   context
-                      .read<TransportBloc>()
-                      .add(const TransportClearSearch());
+                      .read<MachineryBloc>()
+                      .add(const MachineryClearSearch());
                 } else {
                   context
-                      .read<TransportBloc>()
-                      .add(TransportSearchRecords(value));
+                      .read<MachineryBloc>()
+                      .add(MachinerySearchRecords(value));
                 }
               },
             ),
           ),
           const SizedBox(width: 12),
 
-          // Machinery
-          SizedBox(
-            height: 36,
-            child: OutlinedButton.icon(
-              onPressed: () => context.push('/machinery'),
-              icon: const Icon(Icons.construction_outlined, size: 16),
-              label: const Text('Machinery'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                textStyle: AppTextStyles.button,
-                side: const BorderSide(color: AppColors.border, width: 0.5),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Reports
-          SizedBox(
-            height: 36,
-            child: OutlinedButton.icon(
-              onPressed: () => context.push('/reports'),
-              icon: const Icon(Icons.summarize_outlined, size: 16),
-              label: const Text('Reports'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                textStyle: AppTextStyles.button,
-                side: const BorderSide(color: AppColors.border, width: 0.5),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-
           // New Record
           SizedBox(
             height: 36,
             child: ElevatedButton.icon(
-              onPressed: () => context.push('/create'),
+              onPressed: () => context.push('/machinery/create'),
               icon: const Icon(Icons.add, size: 18),
               label: const Text('New Record'),
               style: ElevatedButton.styleFrom(
@@ -201,49 +161,22 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
-
-          // Sign Out
-          SizedBox(
-            width: 36,
-            height: 36,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              iconSize: 20,
-              icon: const Icon(Icons.logout_rounded,
-                  color: AppColors.textSecondary),
-              tooltip: 'Sign Out',
-              onPressed: () async {
-                final confirm = await ConfirmationDialog.show(
-                  context,
-                  title: 'Sign Out',
-                  message: 'Are you sure you want to sign out?',
-                  confirmText: 'Sign Out',
-                  confirmColor: AppColors.error,
-                  icon: Icons.logout_rounded,
-                );
-                if (confirm == true && mounted) {
-                  context.read<AuthBloc>().add(const AuthLogoutRequested());
-                }
-              },
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildContent() {
-    return BlocConsumer<TransportBloc, TransportState>(
+    return BlocConsumer<MachineryBloc, MachineryState>(
       listener: (context, state) {
-        if (state is TransportError) {
+        if (state is MachineryError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(state.message),
                 backgroundColor: AppColors.error),
           );
         }
-        if (state is TransportOperationSuccess) {
+        if (state is MachineryOperationSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(state.message),
@@ -252,7 +185,7 @@ class _DashboardPageState extends State<DashboardPage> {
         }
       },
       builder: (context, state) {
-        if (state is TransportLoading) {
+        if (state is MachineryLoading) {
           return const Center(
             child: SizedBox(
               width: 24,
@@ -263,7 +196,7 @@ class _DashboardPageState extends State<DashboardPage> {
           );
         }
 
-        if (state is TransportLoaded) {
+        if (state is MachineryLoaded) {
           if (state.records.isEmpty) {
             return _buildEmptyState(state.isSearchResult);
           }
@@ -271,7 +204,7 @@ class _DashboardPageState extends State<DashboardPage> {
               state.records, state.isSearchResult, state.searchQuery);
         }
 
-        if (state is TransportError) {
+        if (state is MachineryError) {
           return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -287,8 +220,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   height: 28,
                   child: OutlinedButton(
                     onPressed: () => context
-                        .read<TransportBloc>()
-                        .add(const TransportLoadRecords()),
+                        .read<MachineryBloc>()
+                        .add(const MachineryLoadRecords()),
                     child: const Text('Retry'),
                   ),
                 ),
@@ -308,13 +241,13 @@ class _DashboardPageState extends State<DashboardPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isSearch ? Icons.search_off_rounded : Icons.inbox_rounded,
+            isSearch ? Icons.search_off_rounded : Icons.construction_outlined,
             size: 44,
             color: AppColors.textTertiary.withValues(alpha: 0.5),
           ),
           const SizedBox(height: 12),
           Text(
-            isSearch ? 'No records found' : 'No transport records yet',
+            isSearch ? 'No records found' : 'No machinery records yet',
             style:
                 AppTextStyles.heading3.copyWith(color: AppColors.textSecondary),
           ),
@@ -330,9 +263,8 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  /// Finder-style list with column header bar and alternating-free rows.
   Widget _buildFinderList(
-      List<TransportRecord> records, bool isSearch, String query) {
+      List<MachineryRecord> records, bool isSearch, String query) {
     return Column(
       children: [
         // Column header
@@ -352,11 +284,15 @@ class _DashboardPageState extends State<DashboardPage> {
                   child: Text('Date', style: AppTextStyles.tableHeader)),
               const SizedBox(width: 16),
               Expanded(
-                  flex: 3,
-                  child: Text('Location', style: AppTextStyles.tableHeader)),
+                  flex: 2,
+                  child: Text('Machine', style: AppTextStyles.tableHeader)),
               Expanded(
                   flex: 2,
-                  child: Text('Details', style: AppTextStyles.tableHeader)),
+                  child: Text('Location', style: AppTextStyles.tableHeader)),
+              SizedBox(
+                width: 90,
+                child: Text('Mode', style: AppTextStyles.tableHeader),
+              ),
               SizedBox(
                 width: 100,
                 child: Text('Balance',
@@ -417,8 +353,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 return _FinderRow(
                   record: record,
                   isLast: index == records.length - 1,
-                  onTap: () => context.push('/detail/${record.id}'),
-                  onEdit: () => context.push('/edit/${record.id}'),
+                  onTap: () => context.push('/machinery/detail/${record.id}'),
+                  onEdit: () => context.push('/machinery/edit/${record.id}'),
                   onDelete: () => _deleteRecord(record),
                 );
               },
@@ -429,25 +365,24 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  Future<void> _deleteRecord(TransportRecord record) async {
+  Future<void> _deleteRecord(MachineryRecord record) async {
     final confirm = await ConfirmationDialog.show(
       context,
       title: 'Delete Record',
       message:
-          'Delete the record for ${record.location} on ${DateFormatter.toDisplay(record.date)}?',
+          'Delete the record for ${record.machineName} on ${DateFormatter.toDisplay(record.date)}?',
       confirmText: 'Delete',
       confirmColor: AppColors.error,
       icon: Icons.delete_outline_rounded,
     );
     if (confirm == true && mounted) {
-      context.read<TransportBloc>().add(TransportDeleteRecord(record.id!));
+      context.read<MachineryBloc>().add(MachineryDeleteRecord(record.id!));
     }
   }
 }
 
-/// Finder-style row with hover highlight.
 class _FinderRow extends StatefulWidget {
-  final TransportRecord record;
+  final MachineryRecord record;
   final bool isLast;
   final VoidCallback onTap;
   final VoidCallback onEdit;
@@ -500,24 +435,66 @@ class _FinderRowState extends State<_FinderRow> {
               ),
               const SizedBox(width: 16),
 
+              // Machine
+              Expanded(
+                flex: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      widget.record.machineName,
+                      style: AppTextStyles.subtitle
+                          .copyWith(fontWeight: FontWeight.w500),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (widget.record.machineNumber.isNotEmpty)
+                      Text(
+                        widget.record.machineNumber,
+                        style: AppTextStyles.caption
+                            .copyWith(color: AppColors.textTertiary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+
               // Location
               Expanded(
-                flex: 3,
+                flex: 2,
                 child: Text(
                   widget.record.location,
-                  style:
-                      AppTextStyles.subtitle.copyWith(fontWeight: FontWeight.w500),
+                  style: AppTextStyles.body
+                      .copyWith(color: AppColors.textSecondary),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
 
-              // Details
-              Expanded(
-                flex: 2,
-                child: Text(
-                  '${widget.record.transporter} · ${widget.record.totalLoads} loads',
-                  style: AppTextStyles.body.copyWith(color: AppColors.textSecondary),
-                  overflow: TextOverflow.ellipsis,
+              // Mode badge
+              SizedBox(
+                width: 90,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: widget.record.billingMode == BillingMode.monthlyRent
+                        ? AppColors.accent.withValues(alpha: 0.15)
+                        : AppColors.success.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    widget.record.billingMode == BillingMode.monthlyRent
+                        ? 'Monthly'
+                        : 'Per Load',
+                    style: AppTextStyles.caption.copyWith(
+                      color:
+                          widget.record.billingMode == BillingMode.monthlyRent
+                              ? AppColors.accent
+                              : AppColors.success,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
 

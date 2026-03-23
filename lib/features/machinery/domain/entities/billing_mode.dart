@@ -1,0 +1,1 @@
+enum BillingMode { monthlyRent, perLoad }

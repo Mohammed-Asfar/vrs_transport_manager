@@ -266,10 +266,14 @@ class ReportPdfGenerator {
             bottom: pw.BorderSide(color: _borderColor, width: 0.5)),
       ),
       child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.end,
         children: [
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
+              pw.Text('VRS ENTERPRISES',
+                  style: bold.copyWith(fontSize: 18, letterSpacing: 1)),
+              pw.SizedBox(height: 4),
               pw.Text(typeLabel.toUpperCase(),
                   style: pw.TextStyle(
                       fontSize: 9,
@@ -301,15 +305,16 @@ class ReportPdfGenerator {
     return pw.Table(
       border: pw.TableBorder.all(color: _borderColor, width: 0.5),
       columnWidths: {
-        0: const pw.FixedColumnWidth(24),
-        1: const pw.FixedColumnWidth(58),
+        0: const pw.FixedColumnWidth(22),
+        1: const pw.FixedColumnWidth(55),
         2: const pw.FlexColumnWidth(1.5),
-        3: const pw.FlexColumnWidth(1.2),
+        3: const pw.FlexColumnWidth(0.9),
         4: const pw.FixedColumnWidth(48),
         5: const pw.FixedColumnWidth(32),
-        6: const pw.FixedColumnWidth(45),
-        7: const pw.FixedColumnWidth(52),
-        8: const pw.FixedColumnWidth(34),
+        6: const pw.FixedColumnWidth(46),
+        7: const pw.FixedColumnWidth(46),
+        8: const pw.FixedColumnWidth(36),
+        9: const pw.FixedColumnWidth(52),
       },
       children: [
         pw.TableRow(
@@ -324,12 +329,14 @@ class ReportPdfGenerator {
             _tableHeaderCell('Rate/KM', headerStyle),
             _tableHeaderCell('Amount', headerStyle),
             _tableHeaderCell('Loads', headerStyle),
+            _tableHeaderCell('Total Amt', headerStyle),
           ],
         ),
         ...group.trips.asMap().entries.map((entry) {
           final i = entry.key;
           final trip = entry.value;
           final otherValue = trip.vehicleNo;
+          final totalAmt = trip.amountPerTrip * trip.noOfLoads;
 
           return pw.TableRow(
             children: [
@@ -344,6 +351,7 @@ class ReportPdfGenerator {
               _tableCell(trip.ratePerKm.toStringAsFixed(0), cellStyle),
               _tableCell(trip.amountPerTrip.toStringAsFixed(0), cellStyle),
               _tableCell('${trip.noOfLoads}', cellStyle),
+              _tableCell(totalAmt.toStringAsFixed(0), cellStyle),
             ],
           );
         }),
@@ -357,13 +365,14 @@ class ReportPdfGenerator {
             _tableCell('', headerStyle),
             _tableCell('', headerStyle),
             _tableCell('', headerStyle),
+            _tableCell('', headerStyle),
             _tableHeaderCell('Total', headerStyle),
             _tableHeaderCell(
-              '₹${group.totalAmount.toStringAsFixed(0)}',
+              '${group.totalLoads}',
               headerStyle.copyWith(color: _accent),
             ),
             _tableHeaderCell(
-              '${group.totalLoads}',
+              '₹${group.totalAmount.toStringAsFixed(0)}',
               headerStyle.copyWith(color: _accent),
             ),
           ],

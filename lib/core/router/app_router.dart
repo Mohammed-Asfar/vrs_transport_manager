@@ -13,6 +13,12 @@ import 'package:vrs_transport_manager/features/transport/presentation/bloc/trans
 import 'package:vrs_transport_manager/features/transport/presentation/pages/dashboard_page.dart';
 import 'package:vrs_transport_manager/features/transport/presentation/pages/record_detail_page.dart';
 import 'package:vrs_transport_manager/features/transport/presentation/pages/record_form_page.dart';
+import 'package:vrs_transport_manager/features/machinery/domain/entities/machinery_record.dart';
+import 'package:vrs_transport_manager/features/machinery/domain/usecases/machinery_usecases.dart';
+import 'package:vrs_transport_manager/features/machinery/presentation/bloc/machinery_bloc.dart';
+import 'package:vrs_transport_manager/features/machinery/presentation/pages/machinery_list_page.dart';
+import 'package:vrs_transport_manager/features/machinery/presentation/pages/machinery_form_page.dart';
+import 'package:vrs_transport_manager/features/machinery/presentation/pages/machinery_detail_page.dart';
 
 class AppRouter {
   final AuthBloc authBloc;
@@ -123,11 +129,70 @@ class AppRouter {
           );
         },
       ),
+
+      // ──── Machinery Routes ────
+      GoRoute(
+        path: '/machinery',
+        builder: (context, state) => BlocProvider(
+          create: (_) => sl<MachineryBloc>(),
+          child: const MachineryListPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/machinery/create',
+        builder: (context, state) => BlocProvider(
+          create: (_) => sl<MachineryBloc>(),
+          child: const MachineryFormPage(),
+        ),
+      ),
+      GoRoute(
+        path: '/machinery/edit/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return BlocProvider(
+            create: (_) => sl<MachineryBloc>(),
+            child: FutureBuilder<MachineryRecord?>(
+              future: _loadMachineryRecord(id),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+                if (snapshot.hasError || snapshot.data == null) {
+                  return Scaffold(
+                    appBar: AppBar(title: const Text('Error')),
+                    body: Center(
+                      child: Text('Failed to load record: ${snapshot.error}'),
+                    ),
+                  );
+                }
+                return MachineryFormPage(existingRecord: snapshot.data);
+              },
+            ),
+          );
+        },
+      ),
+      GoRoute(
+        path: '/machinery/detail/:id',
+        builder: (context, state) {
+          final id = state.pathParameters['id']!;
+          return BlocProvider(
+            create: (_) => sl<MachineryBloc>(),
+            child: MachineryDetailPage(recordId: id),
+          );
+        },
+      ),
     ],
   );
 
   Future<TransportRecord?> _loadRecord(String id) async {
     final result = await sl<GetRecordByIdUseCase>()(id);
+    return result.fold((_) => null, (record) => record);
+  }
+
+  Future<MachineryRecord?> _loadMachineryRecord(String id) async {
+    final result = await sl<GetMachineryRecordByIdUseCase>()(id);
     return result.fold((_) => null, (record) => record);
   }
 }

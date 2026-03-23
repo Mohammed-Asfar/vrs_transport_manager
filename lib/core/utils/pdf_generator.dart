@@ -116,12 +116,13 @@ class PdfGenerator {
       border: pw.TableBorder.all(color: _borderColor, width: 0.5),
       columnWidths: {
         0: const pw.FixedColumnWidth(28),
-        1: const pw.FlexColumnWidth(2),
-        2: const pw.FixedColumnWidth(60),
-        3: const pw.FixedColumnWidth(40),
-        4: const pw.FixedColumnWidth(52),
-        5: const pw.FixedColumnWidth(75),
-        6: const pw.FixedColumnWidth(40),
+        1: const pw.FlexColumnWidth(1.5),
+        2: const pw.FixedColumnWidth(55),
+        3: const pw.FixedColumnWidth(36),
+        4: const pw.FixedColumnWidth(55),
+        5: const pw.FixedColumnWidth(62),
+        6: const pw.FixedColumnWidth(42),
+        7: const pw.FixedColumnWidth(72),
       },
       children: [
         // Header row
@@ -135,20 +136,25 @@ class PdfGenerator {
             _tableHeaderCell('Rate/KM', headerStyle),
             _tableHeaderCell('Amount', headerStyle),
             _tableHeaderCell('Loads', headerStyle),
+            _tableHeaderCell('Total Amt', headerStyle),
           ],
         ),
         // Data rows
-        ...record.trips.map((trip) => pw.TableRow(
-              children: [
-                _tableCell('${trip.sNo}', cellStyle),
-                _tableCell(trip.vehicleNo, cellStyle, align: pw.Alignment.centerLeft),
-                _tableCell(trip.chainage.toStringAsFixed(0), cellStyle),
-                _tableCell(trip.km.toStringAsFixed(0), cellStyle),
-                _tableCell(trip.ratePerKm.toStringAsFixed(0), cellStyle),
-                _tableCell(trip.amountPerTrip.toStringAsFixed(0), cellStyle),
-                _tableCell('${trip.noOfLoads}', cellStyle),
-              ],
-            )),
+        ...record.trips.map((trip) {
+          final totalAmt = trip.amountPerTrip * trip.noOfLoads;
+          return pw.TableRow(
+            children: [
+              _tableCell('${trip.sNo}', cellStyle),
+              _tableCell(trip.vehicleNo, cellStyle, align: pw.Alignment.centerLeft),
+              _tableCell(trip.chainage.toStringAsFixed(0), cellStyle),
+              _tableCell(trip.km.toStringAsFixed(0), cellStyle),
+              _tableCell(trip.ratePerKm.toStringAsFixed(0), cellStyle),
+              _tableCell(trip.amountPerTrip.toStringAsFixed(0), cellStyle),
+              _tableCell('${trip.noOfLoads}', cellStyle),
+              _tableCell(totalAmt.toStringAsFixed(0), cellStyle),
+            ],
+          );
+        }),
         // Total row
         pw.TableRow(
           decoration: const pw.BoxDecoration(color: _headerBg),
@@ -158,12 +164,13 @@ class PdfGenerator {
             _tableCell('', headerStyle),
             _tableCell('', headerStyle),
             _tableCell('', headerStyle),
+            _tableCell('', headerStyle),
             _tableHeaderCell(
-              '₹${record.totalAmount.toStringAsFixed(0)}',
+              '${record.totalLoads}',
               headerStyle.copyWith(color: _accent),
             ),
             _tableHeaderCell(
-              '${record.totalLoads}',
+              '₹${record.totalAmount.toStringAsFixed(0)}',
               headerStyle.copyWith(color: _accent),
             ),
           ],

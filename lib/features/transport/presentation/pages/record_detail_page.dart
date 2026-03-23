@@ -277,19 +277,25 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
                 DataColumn(label: Text('Rate/KM'), numeric: true),
                 DataColumn(label: Text('Amount'), numeric: true),
                 DataColumn(label: Text('Loads'), numeric: true),
+                DataColumn(label: Text('Total Amt'), numeric: true),
               ],
               rows: [
                 ...record.trips.map(
-                  (trip) => DataRow(cells: [
-                    DataCell(Text('${trip.sNo}')),
-                    DataCell(Text(trip.vehicleNo)),
-                    DataCell(Text(trip.chainage.toStringAsFixed(0))),
-                    DataCell(Text(trip.km.toStringAsFixed(0))),
-                    DataCell(Text(trip.ratePerKm.toStringAsFixed(0))),
-                    DataCell(
-                        Text('₹${trip.amountPerTrip.toStringAsFixed(0)}')),
-                    DataCell(Text('${trip.noOfLoads}')),
-                  ]),
+                  (trip) {
+                    final totalAmt = trip.amountPerTrip * trip.noOfLoads;
+                    return DataRow(cells: [
+                      DataCell(Text('${trip.sNo}')),
+                      DataCell(Text(trip.vehicleNo)),
+                      DataCell(Text(trip.chainage.toStringAsFixed(0))),
+                      DataCell(Text(trip.km.toStringAsFixed(0))),
+                      DataCell(Text(trip.ratePerKm.toStringAsFixed(0))),
+                      DataCell(
+                          Text('₹${trip.amountPerTrip.toStringAsFixed(0)}')),
+                      DataCell(Text('${trip.noOfLoads}')),
+                      DataCell(
+                          Text('₹${totalAmt.toStringAsFixed(0)}')),
+                    ]);
+                  },
                 ),
                 // Total row
                 DataRow(
@@ -304,13 +310,14 @@ class _RecordDetailPageState extends State<RecordDetailPage> {
                     const DataCell(Text('')),
                     const DataCell(Text('')),
                     const DataCell(Text('')),
+                    const DataCell(Text('')),
                     DataCell(Text(
-                      '₹${record.totalAmount.toStringAsFixed(0)}',
+                      '${record.totalLoads}',
                       style: AppTextStyles.tableHeader
                           .copyWith(color: AppColors.accent),
                     )),
                     DataCell(Text(
-                      '${record.totalLoads}',
+                      '₹${record.totalAmount.toStringAsFixed(0)}',
                       style: AppTextStyles.tableHeader
                           .copyWith(color: AppColors.accent),
                     )),

@@ -26,4 +26,18 @@ class FirestoreConstants {
   static const String ratePerKm = 'ratePerKm';
   static const String amountPerTrip = 'amountPerTrip';
   static const String noOfLoads = 'noOfLoads';
+
+  // Machinery Collection
+  static const String machineryRecords = 'machinery_records';
+
+  // Machinery Record Fields
+  static const String machineName = 'machineName';
+  static const String machineNumber = 'machineNumber';
+  static const String operatorName = 'operatorName';
+  static const String billingMode = 'billingMode';
+  static const String monthlyRent = 'monthlyRent';
+  static const String ratePerLoad = 'ratePerLoad';
+  static const String startDate = 'startDate';
+  static const String endDate = 'endDate';
+  static const String remarks = 'remarks';
 }

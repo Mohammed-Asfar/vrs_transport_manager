@@ -14,6 +14,13 @@ import 'package:vrs_transport_manager/features/auth/presentation/bloc/auth_bloc.
 import 'package:vrs_transport_manager/features/reports/domain/usecases/generate_report_usecase.dart';
 import 'package:vrs_transport_manager/features/reports/presentation/bloc/report_bloc.dart';
 
+// Machinery
+import 'package:vrs_transport_manager/features/machinery/data/datasources/machinery_remote_datasource.dart';
+import 'package:vrs_transport_manager/features/machinery/data/repositories/machinery_repository_impl.dart';
+import 'package:vrs_transport_manager/features/machinery/domain/repositories/machinery_repository.dart';
+import 'package:vrs_transport_manager/features/machinery/domain/usecases/machinery_usecases.dart';
+import 'package:vrs_transport_manager/features/machinery/presentation/bloc/machinery_bloc.dart';
+
 // Transport
 import 'package:vrs_transport_manager/features/transport/data/datasources/transport_remote_datasource.dart';
 import 'package:vrs_transport_manager/features/transport/data/repositories/transport_repository_impl.dart';
@@ -80,6 +87,43 @@ Future<void> initDependencies() async {
       deleteRecord: sl<DeleteRecordUseCase>(),
       searchRecords: sl<SearchRecordsUseCase>(),
       repository: sl<TransportRepository>(),
+    ),
+  );
+
+  // ──── Machinery Feature ────
+  // Datasource
+  sl.registerLazySingleton<MachineryRemoteDatasource>(
+    () => MachineryRemoteDatasource(sl<FirebaseFirestore>()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<MachineryRepository>(
+    () => MachineryRepositoryImpl(sl<MachineryRemoteDatasource>()),
+  );
+
+  // Use Cases
+  sl.registerLazySingleton(
+      () => GetMachineryRecordsUseCase(sl<MachineryRepository>()));
+  sl.registerLazySingleton(
+      () => GetMachineryRecordByIdUseCase(sl<MachineryRepository>()));
+  sl.registerLazySingleton(
+      () => CreateMachineryRecordUseCase(sl<MachineryRepository>()));
+  sl.registerLazySingleton(
+      () => UpdateMachineryRecordUseCase(sl<MachineryRepository>()));
+  sl.registerLazySingleton(
+      () => DeleteMachineryRecordUseCase(sl<MachineryRepository>()));
+  sl.registerLazySingleton(
+      () => SearchMachineryRecordsUseCase(sl<MachineryRepository>()));
+
+  // BLoC
+  sl.registerFactory(
+    () => MachineryBloc(
+      getRecords: sl<GetMachineryRecordsUseCase>(),
+      createRecord: sl<CreateMachineryRecordUseCase>(),
+      updateRecord: sl<UpdateMachineryRecordUseCase>(),
+      deleteRecord: sl<DeleteMachineryRecordUseCase>(),
+      searchRecords: sl<SearchMachineryRecordsUseCase>(),
+      repository: sl<MachineryRepository>(),
     ),
   );
 
