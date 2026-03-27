@@ -113,7 +113,7 @@ jobs:
               latest_version = @{ stringValue = $version }
               download_url   = @{ stringValue = $downloadUrl }
               release_notes  = @{ stringValue = "${{ github.event.head_commit.message }}" }
-              force_update   = @{ booleanValue = $false }
+              force_update   = @{ booleanValue = $true }
               updated_at     = @{ stringValue = (Get-Date -Format o) }
             }
           } | ConvertTo-Json -Depth 5
