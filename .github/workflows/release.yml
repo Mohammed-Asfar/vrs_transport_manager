@@ -51,7 +51,7 @@ jobs:
           }
         shell: pwsh
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_PAT }}
 
       # ── Flutter setup ─────────────────────────────────────
       - name: Setup Flutter
@@ -59,6 +59,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
       - name: Get dependencies
         if: steps.check.outputs.SKIP != 'true'
@@ -92,14 +93,20 @@ jobs:
           $tag = "v$version"
           $file = "installer_output/VRS_Transport_Manager_Setup_$version.exe"
 
+          # Read release notes
+          $notes = "Release $tag"
+          if (Test-Path "RELEASE_NOTES.md") {
+            $notes = Get-Content "RELEASE_NOTES.md" -Raw
+          }
+
           # Create release on the public releases repo
           gh release create $tag $file `
             --repo $env:RELEASES_REPO `
             --title "VRS Transport Manager $tag" `
-            --notes "Release $tag of VRS Transport Manager"
+            --notes $notes
         shell: pwsh
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_PAT }}
 
       # ── Update Firestore app_config/version ───────────────
       - name: Update Firestore version
@@ -109,11 +116,17 @@ jobs:
           $tag = "v$version"
           $downloadUrl = "https://github.com/${{ env.RELEASES_REPO }}/releases/download/$tag/VRS_Transport_Manager_Setup_$version.exe"
 
+          # Read release notes
+          $notes = "Release $tag"
+          if (Test-Path "RELEASE_NOTES.md") {
+            $notes = Get-Content "RELEASE_NOTES.md" -Raw
+          }
+
           $body = @{
             fields = @{
               latest_version = @{ stringValue = $version }
               download_url   = @{ stringValue = $downloadUrl }
-              release_notes  = @{ stringValue = "${{ github.event.head_commit.message }}" }
+              release_notes  = @{ stringValue = $notes }
               force_update   = @{ booleanValue = $true }
               updated_at     = @{ stringValue = (Get-Date -Format o) }
             }
