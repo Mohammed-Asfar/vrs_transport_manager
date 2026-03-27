@@ -7,7 +7,10 @@ on:
       - main
 
 permissions:
-  contents: write  # needed to create GitHub Releases
+  contents: write
+
+env:
+  RELEASES_REPO: Mohammed-Asfar/vrs-transport-releases
 
 jobs:
   build-and-release:
@@ -38,7 +41,7 @@ jobs:
         id: check
         run: |
           $tag = "v${{ steps.version.outputs.VERSION }}"
-          gh release view $tag 2>$null
+          gh release view $tag --repo $env:RELEASES_REPO 2>$null
           if ($LASTEXITCODE -eq 0) {
             Write-Host "Release $tag already exists — skipping"
             echo "SKIP=true" >> $env:GITHUB_OUTPUT
@@ -81,7 +84,7 @@ jobs:
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
         shell: pwsh
 
-      # ── Create GitHub Release ─────────────────────────────
+      # ── Create GitHub Release (on public releases repo) ───
       - name: Create GitHub Release
         if: steps.check.outputs.SKIP != 'true'
         run: |
@@ -89,14 +92,11 @@ jobs:
           $tag = "v$version"
           $file = "installer_output/VRS_Transport_Manager_Setup_$version.exe"
 
-          # Create tag
-          git tag $tag
-          git push origin $tag
-
-          # Create release with the installer attached
+          # Create release on the public releases repo
           gh release create $tag $file `
-            --title "$tag" `
-            --generate-notes
+            --repo $env:RELEASES_REPO `
+            --title "VRS Transport Manager $tag" `
+            --notes "Release $tag of VRS Transport Manager"
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -107,7 +107,7 @@ jobs:
         run: |
           $version = "${{ steps.version.outputs.VERSION }}"
           $tag = "v$version"
-          $downloadUrl = "https://github.com/${{ github.repository }}/releases/download/$tag/VRS_Transport_Manager_Setup_$version.exe"
+          $downloadUrl = "https://github.com/${{ env.RELEASES_REPO }}/releases/download/$tag/VRS_Transport_Manager_Setup_$version.exe"
 
           $body = @{
             fields = @{
