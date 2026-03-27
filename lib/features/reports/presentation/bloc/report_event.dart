@@ -19,10 +19,12 @@ class ReportGenerate extends ReportEvent {
 
 class ReportExportPdf extends ReportEvent {
   final ReportData data;
-  const ReportExportPdf(this.data);
+  final ExportTarget exportTarget;
+  const ReportExportPdf(this.data,
+      {this.exportTarget = ExportTarget.transporter});
 
   @override
-  List<Object> get props => [data];
+  List<Object> get props => [data, exportTarget];
 }
 
 class ReportReset extends ReportEvent {

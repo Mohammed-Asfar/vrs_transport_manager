@@ -33,7 +33,10 @@ class TransporterFilter extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String?>(
-              value: selectedTransporter,
+              value: selectedTransporter != null &&
+                      availableTransporters.contains(selectedTransporter)
+                  ? selectedTransporter
+                  : null,
               isExpanded: true,
               dropdownColor: AppColors.surface,
               icon: const Icon(Icons.expand_more_rounded,

@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vrs_transport_manager/core/utils/report_pdf_generator.dart';
 import 'package:vrs_transport_manager/features/reports/domain/entities/report_config.dart';
 import 'package:vrs_transport_manager/features/reports/domain/usecases/generate_report_usecase.dart';
+export 'package:vrs_transport_manager/features/reports/domain/entities/report_config.dart' show ExportTarget;
 import 'report_event.dart';
 import 'report_state.dart';
 
@@ -39,7 +40,8 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     emit(ReportExporting(config: config, data: event.data));
 
     try {
-      await ReportPdfGenerator.generateAndPrint(event.data);
+      await ReportPdfGenerator.generateAndPrint(event.data,
+          exportTarget: event.exportTarget);
       emit(ReportLoaded(config: config, data: event.data));
     } catch (e) {
       emit(ReportError(config: config, message: 'Failed to generate PDF: $e'));

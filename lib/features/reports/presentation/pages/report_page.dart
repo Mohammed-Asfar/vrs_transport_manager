@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vrs_transport_manager/core/theme/app_colors.dart';
 import 'package:vrs_transport_manager/core/theme/app_text_styles.dart';
 import 'package:vrs_transport_manager/features/reports/domain/entities/report_config.dart';
+import 'package:vrs_transport_manager/features/reports/domain/entities/report_data.dart';
 import 'package:vrs_transport_manager/features/reports/presentation/bloc/report_bloc.dart';
 import 'package:vrs_transport_manager/features/reports/presentation/bloc/report_event.dart';
 import 'package:vrs_transport_manager/features/reports/presentation/bloc/report_state.dart';
@@ -39,6 +40,10 @@ class _ReportPageState extends State<ReportPage> {
 
   void _generate() {
     context.read<ReportBloc>().add(ReportGenerate(_config));
+  }
+
+  void _export(ReportData data, ExportTarget target) {
+    context.read<ReportBloc>().add(ReportExportPdf(data, exportTarget: target));
   }
 
   @override
@@ -94,26 +99,76 @@ class _ReportPageState extends State<ReportPage> {
 
               return SizedBox(
                 height: 32,
-                child: ElevatedButton.icon(
-                  onPressed: isExporting
-                      ? null
-                      : () => context
-                          .read<ReportBloc>()
-                          .add(ReportExportPdf(data)),
-                  icon: isExporting
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.textPrimary,
-                          ),
-                        )
-                      : const Icon(Icons.picture_as_pdf_rounded, size: 16),
-                  label: Text(isExporting ? 'Exporting...' : 'Export PDF'),
-                  style: ElevatedButton.styleFrom(
+                child: PopupMenuButton<ExportTarget>(
+                  enabled: !isExporting,
+                  onSelected: (target) => _export(data, target),
+                  offset: const Offset(0, 36),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: const BorderSide(
+                        color: AppColors.separator, width: 0.5),
+                  ),
+                  color: AppColors.surface,
+                  itemBuilder: (_) => [
+                    const PopupMenuItem(
+                      value: ExportTarget.company,
+                      height: 36,
+                      child: Row(
+                        children: [
+                          Icon(Icons.business_rounded,
+                              size: 16, color: AppColors.textSecondary),
+                          SizedBox(width: 8),
+                          Text('Company Export'),
+                        ],
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: ExportTarget.transporter,
+                      height: 36,
+                      child: Row(
+                        children: [
+                          Icon(Icons.local_shipping_rounded,
+                              size: 16, color: AppColors.textSecondary),
+                          SizedBox(width: 8),
+                          Text('Transporter Export'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    textStyle: AppTextStyles.button,
+                    decoration: BoxDecoration(
+                      color: isExporting
+                          ? AppColors.accent.withValues(alpha: 0.5)
+                          : AppColors.accent,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isExporting)
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        else
+                          const Icon(Icons.picture_as_pdf_rounded,
+                              size: 16, color: Colors.white),
+                        const SizedBox(width: 6),
+                        Text(
+                          isExporting ? 'Exporting...' : 'Export PDF',
+                          style: AppTextStyles.button
+                              .copyWith(color: Colors.white),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(Icons.arrow_drop_down,
+                            size: 18, color: Colors.white),
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -156,6 +211,15 @@ class _ReportPageState extends State<ReportPage> {
                         } else if (state is ReportExporting) {
                           _availableTransporters =
                               state.data.availableTransporters;
+                        }
+                        // Clear stale transporter selection
+                        if (_config.selectedTransporter != null &&
+                            !_availableTransporters
+                                .contains(_config.selectedTransporter)) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _updateConfig(_config.copyWith(
+                                clearSelectedTransporter: true));
+                          });
                         }
                         return TransporterFilter(
                           selectedTransporter: _config.selectedTransporter,
