@@ -38,11 +38,12 @@ jobs:
         id: check
         run: |
           $tag = "v${{ steps.version.outputs.VERSION }}"
-          $exists = gh release view $tag 2>&1
+          gh release view $tag 2>$null
           if ($LASTEXITCODE -eq 0) {
             Write-Host "Release $tag already exists — skipping"
             echo "SKIP=true" >> $env:GITHUB_OUTPUT
           } else {
+            $global:LASTEXITCODE = 0
             echo "SKIP=false" >> $env:GITHUB_OUTPUT
           }
         shell: pwsh
