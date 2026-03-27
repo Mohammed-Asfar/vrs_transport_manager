@@ -162,6 +162,7 @@ class _DateRangeSelectorState extends State<DateRangeSelector> {
 
   String _presetLabel(DateRangePreset preset) {
     return switch (preset) {
+      DateRangePreset.today => 'Today',
       DateRangePreset.thisWeek => 'This Week',
       DateRangePreset.lastWeek => 'Last Week',
       DateRangePreset.thisMonth => 'This Month',

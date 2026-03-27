@@ -1,6 +1,8 @@
 import 'package:equatable/equatable.dart';
 
-enum DateRangePreset { thisWeek, lastWeek, thisMonth, custom }
+enum DateRangePreset { today, thisWeek, lastWeek, thisMonth, custom }
+
+enum ExportTarget { company, transporter }
 
 class ReportConfig extends Equatable {
   final DateTime startDate;
@@ -56,6 +58,9 @@ class ReportConfig extends Equatable {
     DateTime end;
 
     switch (preset) {
+      case DateRangePreset.today:
+        start = DateTime(now.year, now.month, now.day);
+        end = DateTime(now.year, now.month, now.day, 23, 59, 59);
       case DateRangePreset.thisWeek:
         final monday = now.subtract(Duration(days: now.weekday - 1));
         start = DateTime(monday.year, monday.month, monday.day);
