@@ -51,7 +51,7 @@ jobs:
           }
         shell: pwsh
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_PAT }}
 
       # ── Flutter setup ─────────────────────────────────────
       - name: Setup Flutter
@@ -106,7 +106,7 @@ jobs:
             --notes $notes
         shell: pwsh
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASES_PAT }}
 
       # ── Update Firestore app_config/version ───────────────
       - name: Update Firestore version
