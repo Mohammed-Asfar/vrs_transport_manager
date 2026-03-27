@@ -1,6 +1,6 @@
 # VRS Transport Manager
 
-A Flutter Windows desktop application for **VRS Enterprises, Madayampakkam** to manage transport trip records.
+A Flutter Windows desktop application for **VRS Enterprises, Madayampakkam** to manage transport and machinery records.
 
 > **Developer:** Asfar
 > **License:** Private — VRS Enterprises
@@ -11,9 +11,11 @@ A Flutter Windows desktop application for **VRS Enterprises, Madayampakkam** to 
 
 - **Authentication** — Firebase email/password login (no self-registration; users are created manually in Firebase Console)
 - **Transport Records** — Full CRUD for daily transport records, each containing multiple trip entries
+- **Machinery Records** — Full CRUD for machinery records with two billing modes: monthly rent (fixed rate) and per-load (ratePerLoad × totalLoads)
+- **Reports** — Date-range reports with transporter-wise and vehicle-wise grouping, proportional diesel/advance allocation, and PDF export
 - **Auto-Calculations** — `amountPerTrip = km * ratePerKm`, `totalAmount`, `totalLoads`, and `balance = totalAmount - diesel - advance` are computed automatically
 - **Search** — Client-side filtering by vehicle number, transporter name, or location
-- **PDF Export** — Generate PDFs matching VRS Enterprises' paper invoice layout
+- **PDF Export** — Generate PDFs for transport records, machinery records, and aggregated reports (with Noto Sans for rupee symbol support)
 - **In-App Updates** — Reads version info from Firestore (`app_config/version`) and prompts users to download new releases
 
 ## Tech Stack
@@ -28,7 +30,7 @@ A Flutter Windows desktop application for **VRS Enterprises, Madayampakkam** to 
 | Routing | go_router with auth guards |
 | Error Handling | dartz (`Either<Failure, T>`) |
 | PDF | pdf + printing |
-| Other | equatable, intl, url_launcher |
+| Other | equatable, intl, url_launcher, shared_preferences |
 
 ## Architecture
 
@@ -41,20 +43,22 @@ lib/
 │   ├── errors/               # Exception & Failure types
 │   ├── router/               # GoRouter config with auth redirect
 │   ├── services/             # Update checker service
-│   ├── theme/                # Material 3 colors, theme, typography
+│   ├── theme/                # Dark theme (macOS-inspired), colors, typography
 │   ├── utils/                # Date formatting, PDF generation, app version
-│   └── widgets/              # Reusable UI components
+│   └── widgets/              # Reusable UI components (MainShell sidebar, toolbar, etc.)
 ├── features/
 │   ├── auth/                 # data → domain → presentation
-│   └── transport/            # data → domain → presentation
+│   ├── transport/            # data → domain → presentation
+│   ├── machinery/            # data → domain → presentation
+│   └── reports/              # data → domain → presentation
 ├── di/                       # GetIt service locator wiring
 ├── firebase_options.dart
 └── main.dart                 # Firebase init → DI → BLoC providers → MaterialApp.router
 ```
 
-## Firestore Schema
+## Firestore
 
-**Project:** `vrs-invoice-db`
+**Project:** `vrs-transport-db`
 
 ### `transport_records` collection
 
@@ -72,6 +76,10 @@ lib/
 | `updatedAt` | Timestamp | Last update timestamp |
 | `createdBy` | String | Firebase Auth UID |
 
+### `machinery_records` collection
+
+Ordered by `date` descending. Supports two billing modes: `monthlyRent` (fixed monthly rate) and `perLoad` (ratePerLoad × totalLoads).
+
 ### `app_config` collection
 
 Document `version` with fields: `latest_version`, `download_url`, `release_notes`, `force_update`.
@@ -82,10 +90,15 @@ Document `version` with fields: `latest_version`, `download_url`, `release_notes
 |---|---|---|
 | `/splash` | Loading spinner | No |
 | `/login` | Login page | No |
-| `/` | Dashboard (record list) | Yes |
-| `/create` | New record form | Yes |
-| `/edit/:id` | Edit record form | Yes |
-| `/detail/:id` | Record detail + PDF export | Yes |
+| `/` | Dashboard (transport record list) | Yes |
+| `/reports` | Date-range reports | Yes |
+| `/create` | New transport record form | Yes |
+| `/edit/:id` | Edit transport record form | Yes |
+| `/detail/:id` | Transport record detail + PDF export | Yes |
+| `/machinery` | Machinery record list | Yes |
+| `/machinery/create` | New machinery record form | Yes |
+| `/machinery/edit/:id` | Edit machinery record form | Yes |
+| `/machinery/detail/:id` | Machinery record detail + PDF export | Yes |
 
 ## Getting Started
 
@@ -114,13 +127,16 @@ After building, compile `installer.iss` with [Inno Setup](https://jrsoftware.org
 
 ## Firestore Rules
 
-Only authenticated users can read/write `transport_records`. Only authenticated users can read `app_config`.
+Only authenticated users can read/write `transport_records` and `machinery_records`. Only authenticated users can read `app_config`.
 
 ```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /transport_records/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+    match /machinery_records/{document=**} {
       allow read, write: if request.auth != null;
     }
     match /app_config/{document=**} {

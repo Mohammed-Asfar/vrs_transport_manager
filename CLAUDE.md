@@ -72,14 +72,12 @@ Four BLoCs:
 
 ## UI Design
 
-Warm professional design system (Slack/Figma-inspired) with Material 3, supporting **light + dark modes**:
-- **Theme system**: `AppColorScheme` (`ThemeExtension`) with semantic tokens. Access via `AppColors.of(context)`. Light theme (warm cream `#FAF8F5`) and dark theme (warm dark `#1C1B1A`). Teal accent (`#0D9488`).
-- **Theme persistence**: `shared_preferences` stores theme choice. Toggle in sidebar. `themeModeNotifier` (global `ValueNotifier<ThemeMode>`) in `main.dart`.
-- **Left sidebar navigation** (220px): `MainShell` (`core/widgets/main_shell.dart`) wraps authenticated pages. `SidebarNavItem` with 3px teal left indicator bar for active state. Includes theme toggle (sun/moon) above Sign Out.
-- **Spacing**: `AppSpacing` constants — 8px border radius (small), 12px (medium/cards), 16px (large/dialogs). Toolbar 56px, table rows 48px, buttons 36px/32px.
-- Flat design: elevation 0, warm colors
+Dark-only macOS-inspired design system with Material 3:
+- **Theme**: Single dark theme in `AppTheme.lightTheme` (named `lightTheme` but actually dark). Background `#1E1E1E`, surface `#2D2D2D`, blue accent `#0A84FF`. Colors defined as static constants in `AppColors`.
+- **Left sidebar navigation**: `MainShell` (`core/widgets/main_shell.dart`) wraps authenticated pages via `ShellRoute`. Sidebar background `#252525`.
+- Flat design: elevation 0, 6–8px border radius, 0.5px borders
 - System font: Segoe UI on Windows
-- Typography: 11 levels from heading1 (26px) to caption (11px), color-agnostic (defined in `app_text_styles.dart`, colors applied at usage site)
+- Typography: color-agnostic styles defined in `app_text_styles.dart`, colors applied at usage site
 - Asset: `assets/logo_512.png` (app logo)
 - **Shared widgets**: `AppToolbar`, `QuickStatsStrip`, `FormSection`, `FinancialSummaryCard`, `SidebarNavItem` in `core/widgets/`
 
@@ -90,7 +88,22 @@ App version is defined in **three places** that must stay in sync:
 - `pubspec.yaml` — `version:` field
 - `installer.iss` — `AppVersion` and `OutputBaseFilename` (Inno Setup script for Windows installer)
 
-Build the installer: `flutter build windows` then compile `installer.iss` with Inno Setup. Output goes to `installer_output/`.
+### Automated Release (GitHub Actions)
+
+**Branching**: `develop` (daily work) → merge into `main` (triggers release).
+
+```bash
+# From develop branch: bump version, commit, merge to main, push
+./scripts/release.sh 1.3.0
+```
+
+When `main` receives a push, GitHub Actions (`.github/workflows/release.yml`): reads version from `app_version.dart` → builds Flutter Windows → compiles Inno Setup installer → creates GitHub Release with .exe + tag → updates Firestore `app_config/version` with direct download URL. Skips if a release already exists for that version.
+
+**One-time setup**: Add `FIREBASE_SERVICE_ACCOUNT` secret in GitHub repo settings (Settings → Secrets → Actions). Value = contents of Firebase service account JSON key (Firebase Console → Project Settings → Service Accounts → Generate New Private Key).
+
+### Manual Build
+
+`flutter build windows` then compile `installer.iss` with Inno Setup. Output goes to `installer_output/`.
 
 ## In-App Update Checker
 

@@ -1,0 +1,170 @@
+name: Build & Release
+
+# Trigger: when develop is merged into main
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write  # needed to create GitHub Releases
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Read version from app_version.dart ────────────────
+      - name: Extract version
+        id: version
+        run: |
+          $content = Get-Content "lib/core/utils/app_version.dart" -Raw
+          if ($content -match "currentVersion\s*=\s*'([^']+)'") {
+            $version = $matches[1]
+            echo "VERSION=$version" >> $env:GITHUB_OUTPUT
+            Write-Host "Version: $version"
+          } else {
+            Write-Error "Could not read version from app_version.dart"
+            exit 1
+          }
+        shell: pwsh
+
+      # ── Skip if release already exists for this version ───
+      - name: Check if release exists
+        id: check
+        run: |
+          $tag = "v${{ steps.version.outputs.VERSION }}"
+          $exists = gh release view $tag 2>&1
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release $tag already exists — skipping"
+            echo "SKIP=true" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "SKIP=false" >> $env:GITHUB_OUTPUT
+          }
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Flutter setup ─────────────────────────────────────
+      - name: Setup Flutter
+        if: steps.check.outputs.SKIP != 'true'
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Get dependencies
+        if: steps.check.outputs.SKIP != 'true'
+        run: flutter pub get
+
+      # ── Build Windows ─────────────────────────────────────
+      - name: Build Windows release
+        if: steps.check.outputs.SKIP != 'true'
+        run: flutter build windows --release
+
+      # ── Compile Installer (Inno Setup) ────────────────────
+      - name: Compile Inno Setup installer
+        if: steps.check.outputs.SKIP != 'true'
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+
+          # Update version in installer.iss (in case it wasn't bumped)
+          (Get-Content installer.iss) -replace '^AppVersion=.*', "AppVersion=$version" `
+            -replace '^OutputBaseFilename=.*', "OutputBaseFilename=VRS_Transport_Manager_Setup_$version" |
+            Set-Content installer.iss
+
+          # Compile
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+        shell: pwsh
+
+      # ── Create GitHub Release ─────────────────────────────
+      - name: Create GitHub Release
+        if: steps.check.outputs.SKIP != 'true'
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $tag = "v$version"
+          $file = "installer_output/VRS_Transport_Manager_Setup_$version.exe"
+
+          # Create tag
+          git tag $tag
+          git push origin $tag
+
+          # Create release with the installer attached
+          gh release create $tag $file `
+            --title "$tag" `
+            --generate-notes
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Update Firestore app_config/version ───────────────
+      - name: Update Firestore version
+        if: steps.check.outputs.SKIP != 'true'
+        run: |
+          $version = "${{ steps.version.outputs.VERSION }}"
+          $tag = "v$version"
+          $downloadUrl = "https://github.com/${{ github.repository }}/releases/download/$tag/VRS_Transport_Manager_Setup_$version.exe"
+
+          $body = @{
+            fields = @{
+              latest_version = @{ stringValue = $version }
+              download_url   = @{ stringValue = $downloadUrl }
+              release_notes  = @{ stringValue = "${{ github.event.head_commit.message }}" }
+              force_update   = @{ booleanValue = $false }
+              updated_at     = @{ stringValue = (Get-Date -Format o) }
+            }
+          } | ConvertTo-Json -Depth 5
+
+          # Get access token from service account
+          $sa = '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' | ConvertFrom-Json
+
+          # Build JWT
+          $header = @{ alg = "RS256"; typ = "JWT" } | ConvertTo-Json -Compress
+          $now = [int](Get-Date -UFormat %s)
+          $claims = @{
+            iss   = $sa.client_email
+            scope = "https://www.googleapis.com/auth/datastore"
+            aud   = "https://oauth2.googleapis.com/token"
+            iat   = $now
+            exp   = $now + 3600
+          } | ConvertTo-Json -Compress
+
+          function ConvertTo-Base64Url($bytes) {
+            [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+','-').Replace('/','_')
+          }
+
+          $headerB64  = ConvertTo-Base64Url([Text.Encoding]::UTF8.GetBytes($header))
+          $claimsB64  = ConvertTo-Base64Url([Text.Encoding]::UTF8.GetBytes($claims))
+          $unsigned   = "$headerB64.$claimsB64"
+
+          $rsa = [Security.Cryptography.RSA]::Create()
+          $rsa.ImportFromPem($sa.private_key)
+          $sigBytes = $rsa.SignData(
+            [Text.Encoding]::UTF8.GetBytes($unsigned),
+            [Security.Cryptography.HashAlgorithmName]::SHA256,
+            [Security.Cryptography.RSASignaturePadding]::Pkcs1
+          )
+          $sigB64 = ConvertTo-Base64Url($sigBytes)
+          $jwt = "$unsigned.$sigB64"
+
+          # Exchange JWT for access token
+          $tokenResp = Invoke-RestMethod -Method Post -Uri "https://oauth2.googleapis.com/token" -Body @{
+            grant_type = "urn:ietf:params:oauth:grant-type:jwt-bearer"
+            assertion  = $jwt
+          }
+          $accessToken = $tokenResp.access_token
+
+          # Update Firestore document
+          $projectId = "vrs-transport-db"
+          $url = "https://firestore.googleapis.com/v1/projects/$projectId/databases/(default)/documents/app_config/version"
+
+          Invoke-RestMethod -Method Patch -Uri $url `
+            -Headers @{ Authorization = "Bearer $accessToken" } `
+            -ContentType "application/json" `
+            -Body $body
+
+          Write-Host "Firestore updated: v$version -> $downloadUrl"
+        shell: pwsh
