@@ -3,17 +3,19 @@
 # VRS Transport Manager — Release Script
 #
 # Usage:
-#   ./scripts/release.sh <version>
+#   ./scripts/release.sh <version> "<release notes>"
 #
 # Examples:
-#   ./scripts/release.sh 1.3.0
+#   ./scripts/release.sh 1.3.0 "Bug fixes and new machinery export"
+#   ./scripts/release.sh 1.4.0 "Added company/transporter export modes"
 #
 # What it does (on develop branch):
 #   1. Updates version in app_version.dart, pubspec.yaml, installer.iss
-#   2. Commits the version bump
-#   3. Merges develop → main and pushes
-#   4. Switches back to develop
-#   5. GitHub Actions takes over: build → installer → release → Firestore
+#   2. Writes release notes to RELEASE_NOTES.md
+#   3. Commits the version bump
+#   4. Merges develop → main and pushes
+#   5. Switches back to develop
+#   6. GitHub Actions takes over: build → installer → release → Firestore
 # ─────────────────────────────────────────────────────────────
 
 set -e
@@ -23,15 +25,22 @@ cd "$PROJECT_DIR"
 
 # ── Parse args ──────────────────────────────────────────────
 VERSION="$1"
+NOTES="$2"
 
 if [ -z "$VERSION" ]; then
-  echo "Usage: ./scripts/release.sh <version>"
-  echo "  e.g. ./scripts/release.sh 1.3.0"
+  echo "Usage: ./scripts/release.sh <version> \"<release notes>\""
+  echo "  e.g. ./scripts/release.sh 1.3.0 \"Bug fixes and new export\""
   exit 1
 fi
 
 if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
   echo "Error: Version must be semver (e.g. 1.3.0)"
+  exit 1
+fi
+
+if [ -z "$NOTES" ]; then
+  echo "Error: Release notes are required."
+  echo "  e.g. ./scripts/release.sh $VERSION \"Bug fixes and improvements\""
   exit 1
 fi
 
@@ -69,12 +78,16 @@ sed -i "s/^OutputBaseFilename=.*/OutputBaseFilename=VRS_Transport_Manager_Setup_
 echo "  ✓ app_version.dart → $VERSION"
 echo "  ✓ pubspec.yaml → $VERSION+$NEW_BUILD"
 echo "  ✓ installer.iss → $VERSION"
+
+# Write release notes
+echo "$NOTES" > RELEASE_NOTES.md
+echo "  ✓ RELEASE_NOTES.md"
 echo ""
 
 # ── Step 2: Commit on develop ───────────────────────────────
 echo "▸ [2/4] Committing version bump on develop..."
 
-git add lib/core/utils/app_version.dart pubspec.yaml installer.iss
+git add lib/core/utils/app_version.dart pubspec.yaml installer.iss RELEASE_NOTES.md
 git commit -m "release: v$VERSION"
 echo "  ✓ Committed on develop"
 echo ""
