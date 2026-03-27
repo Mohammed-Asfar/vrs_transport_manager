@@ -59,6 +59,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
       - name: Get dependencies
         if: steps.check.outputs.SKIP != 'true'
