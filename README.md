@@ -121,9 +121,21 @@ flutter run -d windows
 flutter build windows
 ```
 
-### Build Installer
+### Release
 
-After building, compile `installer.iss` with [Inno Setup](https://jrsoftware.org/isinfo.php). The installer is output to `installer_output/`.
+From the `develop` branch, run:
+
+```bash
+./scripts/release.sh 1.3.0
+```
+
+This bumps version in all 3 files, commits, merges `develop` → `main`, and pushes. GitHub Actions then automatically builds the app, compiles the Inno Setup installer, creates a GitHub Release with the `.exe`, and updates Firestore `app_config/version` with the direct download URL.
+
+**One-time setup**: Add `FIREBASE_SERVICE_ACCOUNT` secret in GitHub repo settings (Settings → Secrets → Actions) with the Firebase service account JSON key.
+
+### Manual Build
+
+`flutter build windows` then compile `installer.iss` with [Inno Setup](https://jrsoftware.org/isinfo.php). Output goes to `installer_output/`.
 
 ## Firestore Rules
 

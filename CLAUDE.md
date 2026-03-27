@@ -12,6 +12,9 @@ VRS Transport Manager is a **Flutter Windows desktop application** for VRS Enter
 # Run the app (Windows desktop)
 flutter run -d windows
 
+# Release (from develop branch): bumps version, merges to main, triggers GitHub Actions
+./scripts/release.sh 1.3.0
+
 # Build for Windows
 flutter build windows
 
