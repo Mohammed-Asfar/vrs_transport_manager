@@ -26,22 +26,25 @@ jobs:
       - name: Read release notes
         id: notes
         run: |
+          echo "NOTES<<EOF" >> $GITHUB_OUTPUT
           if [ -f "RELEASE_NOTES.md" ]; then
-            NOTES=$(cat RELEASE_NOTES.md)
+            cat RELEASE_NOTES.md >> $GITHUB_OUTPUT
           else
-            NOTES="Release v${{ steps.version.outputs.VERSION }}"
+            echo "Release v${{ steps.version.outputs.VERSION }}" >> $GITHUB_OUTPUT
           fi
-          echo "NOTES=$NOTES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       # ── Update Firestore app_config/version ───────────────
       - name: Update Firestore version
         env:
           FIREBASE_SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          RAW_NOTES: ${{ steps.notes.outputs.NOTES }}
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
           TAG="v$VERSION"
           DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/$TAG/VRS_Transport_Manager_Setup_$VERSION.exe"
-          NOTES="${{ steps.notes.outputs.NOTES }}"
+          # Escape notes for JSON (newlines → \n, quotes escaped)
+          NOTES=$(python3 -c "import sys,json,os; print(json.dumps(os.environ['RAW_NOTES'].strip())[1:-1])")
 
           # Build JWT from service account
           SA_EMAIL=$(echo "$FIREBASE_SA" | python3 -c "import sys,json; print(json.load(sys.stdin)['client_email'])")
