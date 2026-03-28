@@ -34,45 +34,64 @@ class ReportPdfGenerator {
 
     final isCompany = exportTarget == ExportTarget.company;
 
-    // Page 1: Summary (only for All Transporters)
-    if (data.config.selectedTransporter == null) {
-      pdf.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(48),
-          build: (context) => pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              _buildHeader(data),
-              pw.SizedBox(height: 24),
-              _buildOverviewGrid(data.overview, smallBold, small,
-                  isCompany: isCompany),
-              pw.SizedBox(height: 24),
-              _buildSummaryTable(data, smallBold, small,
-                  isCompany: isCompany),
-            ],
-          ),
-        ),
-      );
-    }
+    if (isCompany) {
+      // ── Company Export: single continuous table, no summary, no transporter names ──
+      final allTrips = data.groups.expand((g) => g.trips).toList()
+        ..sort((a, b) => a.date.compareTo(b.date));
+      final totalLoads =
+          allTrips.fold<int>(0, (sum, t) => sum + t.noOfLoads);
 
-    // Page 2+: One multi-page section per group
-    for (final group in data.groups) {
       pdf.addPage(
         pw.MultiPage(
           pageFormat: PdfPageFormat.a4,
           margin: const pw.EdgeInsets.all(48),
-          header: (context) => _buildGroupHeader(group, data.config, bold),
+          header: (context) => _buildCompanyHeader(data.config, bold),
           build: (context) => [
             pw.SizedBox(height: 16),
-            _buildGroupTripTable(group, data.config, smallBold, small,
-                isCompany: isCompany),
-            pw.SizedBox(height: 20),
-            if (!isCompany)
-              _buildGroupFinancialFooter(group, smallBold, small, smallMuted),
+            _buildCompanyTripTable(allTrips, totalLoads, smallBold, small),
           ],
         ),
       );
+    } else {
+      // ── Transporter Export: summary page + per-group detail pages ──
+
+      // Page 1: Summary (only for All Transporters)
+      if (data.config.selectedTransporter == null) {
+        pdf.addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat.a4,
+            margin: const pw.EdgeInsets.all(48),
+            build: (context) => pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                _buildHeader(data),
+                pw.SizedBox(height: 24),
+                _buildOverviewGrid(data.overview, smallBold, small),
+                pw.SizedBox(height: 24),
+                _buildSummaryTable(data, smallBold, small),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // Page 2+: One multi-page section per group
+      for (final group in data.groups) {
+        pdf.addPage(
+          pw.MultiPage(
+            pageFormat: PdfPageFormat.a4,
+            margin: const pw.EdgeInsets.all(48),
+            header: (context) =>
+                _buildGroupHeader(group, data.config, bold),
+            build: (context) => [
+              pw.SizedBox(height: 16),
+              _buildGroupTripTable(group, data.config, smallBold, small),
+              pw.SizedBox(height: 20),
+              _buildGroupFinancialFooter(group, smallBold, small, smallMuted),
+            ],
+          ),
+        );
+      }
     }
 
     final dateRange =
@@ -145,9 +164,8 @@ class ReportPdfGenerator {
   static pw.Widget _buildOverviewGrid(
     ReportOverview overview,
     pw.TextStyle boldStyle,
-    pw.TextStyle normalStyle, {
-    bool isCompany = false,
-  }) {
+    pw.TextStyle normalStyle,
+  ) {
     final items = <pw.Widget>[
       _overviewItem(
           'Records', '${overview.totalRecords}', boldStyle, normalStyle),
@@ -155,22 +173,17 @@ class ReportPdfGenerator {
           boldStyle, normalStyle),
       _overviewItem(
           'Total Loads', '${overview.totalLoads}', boldStyle, normalStyle),
+      _overviewItem(
+          'Total Amount',
+          '₹${overview.totalAmount.toStringAsFixed(0)}',
+          boldStyle.copyWith(color: _accent),
+          normalStyle),
+      _overviewItem(
+          'Balance',
+          '₹${overview.totalBalance.toStringAsFixed(0)}',
+          boldStyle.copyWith(color: _successColor),
+          normalStyle),
     ];
-
-    if (!isCompany) {
-      items.addAll([
-        _overviewItem(
-            'Total Amount',
-            '₹${overview.totalAmount.toStringAsFixed(0)}',
-            boldStyle.copyWith(color: _accent),
-            normalStyle),
-        _overviewItem(
-            'Balance',
-            '₹${overview.totalBalance.toStringAsFixed(0)}',
-            boldStyle.copyWith(color: _successColor),
-            normalStyle),
-      ]);
-    }
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(12),
@@ -206,47 +219,9 @@ class ReportPdfGenerator {
   static pw.Widget _buildSummaryTable(
     ReportData data,
     pw.TextStyle headerStyle,
-    pw.TextStyle cellStyle, {
-    bool isCompany = false,
-  }) {
+    pw.TextStyle cellStyle,
+  ) {
     const groupLabel = 'Transporter';
-
-    if (isCompany) {
-      return pw.Table(
-        border: pw.TableBorder.all(color: _borderColor, width: 0.5),
-        columnWidths: {
-          0: const pw.FlexColumnWidth(2.5),
-          1: const pw.FixedColumnWidth(50),
-          2: const pw.FixedColumnWidth(50),
-        },
-        children: [
-          pw.TableRow(
-            decoration: const pw.BoxDecoration(color: _headerBg),
-            children: [
-              _tableHeaderCell(groupLabel, headerStyle),
-              _tableHeaderCell('Trips', headerStyle),
-              _tableHeaderCell('Loads', headerStyle),
-            ],
-          ),
-          ...data.groups.map((group) => pw.TableRow(
-                children: [
-                  _tableCell(group.groupKey, cellStyle,
-                      align: pw.Alignment.centerLeft),
-                  _tableCell('${group.trips.length}', cellStyle),
-                  _tableCell('${group.totalLoads}', cellStyle),
-                ],
-              )),
-          pw.TableRow(
-            decoration: const pw.BoxDecoration(color: _headerBg),
-            children: [
-              _tableHeaderCell('Total', headerStyle),
-              _tableHeaderCell('${data.overview.totalTrips}', headerStyle),
-              _tableHeaderCell('${data.overview.totalLoads}', headerStyle),
-            ],
-          ),
-        ],
-      );
-    }
 
     return pw.Table(
       border: pw.TableBorder.all(color: _borderColor, width: 0.5),
@@ -363,76 +338,10 @@ class ReportPdfGenerator {
     ReportGroup group,
     ReportConfig config,
     pw.TextStyle headerStyle,
-    pw.TextStyle cellStyle, {
-    bool isCompany = false,
-  }) {
+    pw.TextStyle cellStyle,
+  ) {
     const otherLabel = 'Vehicle No';
 
-    if (isCompany) {
-      // Company: #, Date, Location, Vehicle No, Chainage, KM (halved), Loads
-      return pw.Table(
-        border: pw.TableBorder.all(color: _borderColor, width: 0.5),
-        columnWidths: {
-          0: const pw.FixedColumnWidth(22),
-          1: const pw.FixedColumnWidth(55),
-          2: const pw.FlexColumnWidth(1.8),
-          3: const pw.FlexColumnWidth(1.2),
-          4: const pw.FixedColumnWidth(48),
-          5: const pw.FixedColumnWidth(40),
-          6: const pw.FixedColumnWidth(40),
-        },
-        children: [
-          pw.TableRow(
-            decoration: const pw.BoxDecoration(color: _headerBg),
-            children: [
-              _tableHeaderCell('#', headerStyle),
-              _tableHeaderCell('Date', headerStyle),
-              _tableHeaderCell('Location', headerStyle),
-              _tableHeaderCell(otherLabel, headerStyle),
-              _tableHeaderCell('Chainage', headerStyle),
-              _tableHeaderCell('KM', headerStyle),
-              _tableHeaderCell('Loads', headerStyle),
-            ],
-          ),
-          ...group.trips.asMap().entries.map((entry) {
-            final i = entry.key;
-            final trip = entry.value;
-
-            return pw.TableRow(
-              children: [
-                _tableCell('${i + 1}', cellStyle),
-                _tableCell(DateFormatter.toDisplay(trip.date), cellStyle),
-                _tableCell(trip.location, cellStyle,
-                    align: pw.Alignment.centerLeft),
-                _tableCell(trip.vehicleNo, cellStyle,
-                    align: pw.Alignment.centerLeft),
-                _tableCell(trip.chainage.toStringAsFixed(0), cellStyle),
-                _tableCell(_formatHalvedKm(trip.km), cellStyle),
-                _tableCell('${trip.noOfLoads}', cellStyle),
-              ],
-            );
-          }),
-          // Total row
-          pw.TableRow(
-            decoration: const pw.BoxDecoration(color: _headerBg),
-            children: [
-              _tableCell('', headerStyle),
-              _tableCell('', headerStyle),
-              _tableCell('', headerStyle),
-              _tableCell('', headerStyle),
-              _tableCell('', headerStyle),
-              _tableHeaderCell('Total', headerStyle),
-              _tableHeaderCell(
-                '${group.totalLoads}',
-                headerStyle.copyWith(color: _accent),
-              ),
-            ],
-          ),
-        ],
-      );
-    }
-
-    // Transporter: full table with all columns
     return pw.Table(
       border: pw.TableBorder.all(color: _borderColor, width: 0.5),
       columnWidths: {
@@ -569,6 +478,101 @@ class ReportPdfGenerator {
               ],
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  // ─── Company Export (no summary, no transporter names) ───
+
+  static pw.Widget _buildCompanyHeader(
+    ReportConfig config,
+    pw.TextStyle bold,
+  ) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.only(bottom: 12),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(
+            bottom: pw.BorderSide(color: _borderColor, width: 0.5)),
+      ),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.end,
+        children: [
+          pw.Text('VRS ENTERPRISES',
+              style: bold.copyWith(fontSize: 18, letterSpacing: 1)),
+          pw.Spacer(),
+          pw.Text(
+            DateFormatter.toRange(config.startDate, config.endDate),
+            style: pw.TextStyle(fontSize: 9, color: _mutedText),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static pw.Widget _buildCompanyTripTable(
+    List<ReportTrip> allTrips,
+    int totalLoads,
+    pw.TextStyle headerStyle,
+    pw.TextStyle cellStyle,
+  ) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: _borderColor, width: 0.5),
+      columnWidths: {
+        0: const pw.FixedColumnWidth(22),
+        1: const pw.FixedColumnWidth(55),
+        2: const pw.FlexColumnWidth(1.8),
+        3: const pw.FlexColumnWidth(1.2),
+        4: const pw.FixedColumnWidth(48),
+        5: const pw.FixedColumnWidth(40),
+        6: const pw.FixedColumnWidth(40),
+      },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: _headerBg),
+          children: [
+            _tableHeaderCell('#', headerStyle),
+            _tableHeaderCell('Date', headerStyle),
+            _tableHeaderCell('Location', headerStyle),
+            _tableHeaderCell('Vehicle No', headerStyle),
+            _tableHeaderCell('Chainage', headerStyle),
+            _tableHeaderCell('KM', headerStyle),
+            _tableHeaderCell('Loads', headerStyle),
+          ],
+        ),
+        ...allTrips.asMap().entries.map((entry) {
+          final i = entry.key;
+          final trip = entry.value;
+
+          return pw.TableRow(
+            children: [
+              _tableCell('${i + 1}', cellStyle),
+              _tableCell(DateFormatter.toDisplay(trip.date), cellStyle),
+              _tableCell(trip.location, cellStyle,
+                  align: pw.Alignment.centerLeft),
+              _tableCell(trip.vehicleNo, cellStyle,
+                  align: pw.Alignment.centerLeft),
+              _tableCell(trip.chainage.toStringAsFixed(0), cellStyle),
+              _tableCell(_formatHalvedKm(trip.km), cellStyle),
+              _tableCell('${trip.noOfLoads}', cellStyle),
+            ],
+          );
+        }),
+        // Total row
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: _headerBg),
+          children: [
+            _tableCell('', headerStyle),
+            _tableCell('', headerStyle),
+            _tableCell('', headerStyle),
+            _tableCell('', headerStyle),
+            _tableCell('', headerStyle),
+            _tableHeaderCell('Total', headerStyle),
+            _tableHeaderCell(
+              '$totalLoads',
+              headerStyle.copyWith(color: _accent),
+            ),
+          ],
         ),
       ],
     );
