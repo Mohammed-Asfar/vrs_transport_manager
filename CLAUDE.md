@@ -12,8 +12,9 @@ VRS Transport Manager is a **Flutter Windows desktop application** for VRS Enter
 # Run the app (Windows desktop)
 flutter run -d windows
 
-# Release (from develop branch): bumps version, merges to main, triggers GitHub Actions
-./scripts/release.sh 1.3.0
+# Release (from develop branch): bumps version, builds, creates installer, merges to main, uploads to GitHub Releases
+# GitHub Actions then updates Firestore with download URL
+./scripts/release.sh 1.5.0 "Added new feature X, fixed bug Y"
 
 # Build for Windows
 flutter build windows
@@ -55,7 +56,7 @@ Each feature follows: `data/` (datasources, models, repository impls) → `domai
 - **Routing**: GoRouter with auth-based redirects via `_AuthNotifier`. Protected routes require `AuthAuthenticated` state. All authenticated routes are wrapped in a `ShellRoute` that provides the persistent sidebar (`MainShell`). Routes: `/splash`, `/login`, `/` (dashboard), `/reports`, `/create`, `/edit/:id`, `/detail/:id`, `/machinery`, `/machinery/create`, `/machinery/edit/:id`, `/machinery/detail/:id`. Edit routes lazy-load record data using their respective `GetRecordByIdUseCase`. Shell routes use `CustomTransitionPage` with a 150ms crossfade (no slide/pop).
 - **Real-time updates**: `TransportRepository.watchRecords()` streams live Firestore changes to the UI. TransportBloc handles this without overwriting active search results.
 - **Search**: Client-side filtering (Firestore limitation) on location, vehicle numbers, and transporter names.
-- **PDF export**: Three generators — `PdfGenerator` for transport records, `MachineryPdfGenerator` for machinery records, `ReportPdfGenerator` for aggregated reports. All use Noto Sans font for rupee symbol (₹) support.
+- **PDF export**: Three generators — `PdfGenerator` for transport records, `MachineryPdfGenerator` for machinery records, `ReportPdfGenerator` for aggregated reports. All use Noto Sans font for rupee symbol (₹) support. `ReportPdfGenerator` has two export modes: **Company** (single continuous table, no financials, KM halved, no transporter names) and **Transporter** (summary page + per-transporter detail pages with full financials).
 
 ## Firestore
 
@@ -71,7 +72,7 @@ Four BLoCs:
 - **AuthBloc**: `AuthCheckRequested` → monitors Firebase auth stream (with 3s timeout for Windows C++ SDK); `AuthLoginRequested` / `AuthLogoutRequested`
 - **TransportBloc**: Load, Create, Update, Delete, Search, ClearSearch — successful mutations auto-reload the list; subscribes to real-time Firestore stream
 - **MachineryBloc**: Same pattern as TransportBloc. Supports two billing modes: `monthlyRent` (fixed monthly rate) and `perLoad` (ratePerLoad × totalLoads)
-- **ReportBloc**: `ReportGenerate` (date range + view mode), `ReportExportPdf`, `ReportReset` — supports transporter-wise and vehicle-wise grouping with proportional diesel/advance allocation. Preset date filters: thisWeek, lastWeek, thisMonth, custom.
+- **ReportBloc**: `ReportGenerate` (date range + view mode), `ReportExportPdf` (with `ExportTarget`: company or transporter), `ReportReset` — supports transporter-wise grouping with proportional diesel/advance allocation. Preset date filters: today, thisWeek, lastWeek, thisMonth, custom.
 
 ## UI Design
 
@@ -91,18 +92,37 @@ App version is defined in **three places** that must stay in sync:
 - `pubspec.yaml` — `version:` field
 - `installer.iss` — `AppVersion` and `OutputBaseFilename` (Inno Setup script for Windows installer)
 
-### Automated Release (GitHub Actions)
+### Automated Release
 
-**Branching**: `develop` (daily work) → merge into `main` (triggers release).
+**Branching**: `develop` (daily work) → merge into `main` (triggers Firestore update).
+
+**Release script** (`scripts/release.sh`): does everything locally + creates the GitHub Release, then GitHub Actions only updates Firestore.
 
 ```bash
-# From develop branch: bump version, commit, merge to main, push
-./scripts/release.sh 1.3.0
+# Usage (must be on develop branch, no uncommitted changes):
+./scripts/release.sh <version> "<release notes>"
+
+# Example:
+./scripts/release.sh 1.5.0 "Added company export, fixed dropdown crash"
 ```
 
-When `main` receives a push, GitHub Actions (`.github/workflows/release.yml`): reads version from `app_version.dart` → builds Flutter Windows → compiles Inno Setup installer → creates GitHub Release with .exe + tag → updates Firestore `app_config/version` with direct download URL. Skips if a release already exists for that version.
+**What the script does:**
+1. Updates version in `app_version.dart`, `pubspec.yaml`, `installer.iss`
+2. Writes release notes to `RELEASE_NOTES.md`
+3. Runs `flutter build windows --release`
+4. Compiles Inno Setup installer (requires Inno Setup 6 at `D:/Software/Inno Setup 6/ISCC.exe`)
+5. Commits version bump on `develop`, merges `develop` → `main`, pushes both
+6. Creates GitHub Release with `.exe` attached via `gh` CLI
 
-**One-time setup**: Add `FIREBASE_SERVICE_ACCOUNT` secret in GitHub repo settings (Settings → Secrets → Actions). Value = contents of Firebase service account JSON key (Firebase Console → Project Settings → Service Accounts → Generate New Private Key).
+**What GitHub Actions does** (triggered by push to `main`):
+- Reads version from `app_version.dart` and `RELEASE_NOTES.md`
+- Updates Firestore `app_config/version` with download URL and release notes
+- Skips if release already exists for that version
+
+**Prerequisites:**
+- `gh` CLI authenticated (`gh auth login`)
+- Inno Setup 6 installed at `D:/Software/Inno Setup 6/`
+- `FIREBASE_SERVICE_ACCOUNT` secret in GitHub repo settings (Settings → Secrets → Actions). Value = Firebase service account JSON key.
 
 ### Manual Build
 
