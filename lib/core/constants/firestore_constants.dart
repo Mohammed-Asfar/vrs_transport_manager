@@ -30,6 +30,22 @@ class FirestoreConstants {
   // Machinery Collection
   static const String machineryRecords = 'machinery_records';
 
+  // Client Collection
+  static const String clients = 'clients';
+  static const String companyName = 'companyName';
+  static const String gstin = 'gstin';
+  static const String address = 'address';
+
+  // Invoice Collection
+  static const String invoices = 'invoices';
+  static const String invoiceNumber = 'invoiceNumber';
+  static const String invoiceDate = 'invoiceDate';
+  static const String invoiceCounter = 'invoice_counter';
+
+  // Company Profile Collection
+  static const String companyProfile = 'company_profile';
+  static const String companyProfileDoc = 'profile';
+
   // Machinery Record Fields
   static const String machineName = 'machineName';
   static const String machineNumber = 'machineNumber';

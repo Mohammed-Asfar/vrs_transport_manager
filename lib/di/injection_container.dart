@@ -21,6 +21,27 @@ import 'package:vrs_transport_manager/features/machinery/domain/repositories/mac
 import 'package:vrs_transport_manager/features/machinery/domain/usecases/machinery_usecases.dart';
 import 'package:vrs_transport_manager/features/machinery/presentation/bloc/machinery_bloc.dart';
 
+// Client
+import 'package:vrs_transport_manager/features/client/data/datasources/client_remote_datasource.dart';
+import 'package:vrs_transport_manager/features/client/data/repositories/client_repository_impl.dart';
+import 'package:vrs_transport_manager/features/client/domain/repositories/client_repository.dart';
+import 'package:vrs_transport_manager/features/client/domain/usecases/client_usecases.dart';
+import 'package:vrs_transport_manager/features/client/presentation/bloc/client_bloc.dart';
+
+// Invoice
+import 'package:vrs_transport_manager/features/invoice/data/datasources/invoice_remote_datasource.dart';
+import 'package:vrs_transport_manager/features/invoice/data/repositories/invoice_repository_impl.dart';
+import 'package:vrs_transport_manager/features/invoice/domain/repositories/invoice_repository.dart';
+import 'package:vrs_transport_manager/features/invoice/domain/usecases/invoice_usecases.dart';
+import 'package:vrs_transport_manager/features/invoice/presentation/bloc/invoice_bloc.dart';
+
+// Settings
+import 'package:vrs_transport_manager/features/settings/data/datasources/company_profile_remote_datasource.dart';
+import 'package:vrs_transport_manager/features/settings/data/repositories/company_profile_repository_impl.dart';
+import 'package:vrs_transport_manager/features/settings/domain/repositories/company_profile_repository.dart';
+import 'package:vrs_transport_manager/features/settings/domain/usecases/company_profile_usecases.dart';
+import 'package:vrs_transport_manager/features/settings/presentation/bloc/company_profile_bloc.dart';
+
 // Transport
 import 'package:vrs_transport_manager/features/transport/data/datasources/transport_remote_datasource.dart';
 import 'package:vrs_transport_manager/features/transport/data/repositories/transport_repository_impl.dart';
@@ -124,6 +145,95 @@ Future<void> initDependencies() async {
       deleteRecord: sl<DeleteMachineryRecordUseCase>(),
       searchRecords: sl<SearchMachineryRecordsUseCase>(),
       repository: sl<MachineryRepository>(),
+    ),
+  );
+
+  // ──── Invoice Feature ────
+  // Datasource
+  sl.registerLazySingleton<InvoiceRemoteDatasource>(
+    () => InvoiceRemoteDatasource(sl<FirebaseFirestore>()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<InvoiceRepository>(
+    () => InvoiceRepositoryImpl(sl<InvoiceRemoteDatasource>()),
+  );
+
+  // Use Cases
+  sl.registerLazySingleton(
+      () => GetInvoicesUseCase(sl<InvoiceRepository>()));
+  sl.registerLazySingleton(
+      () => GetInvoiceByIdUseCase(sl<InvoiceRepository>()));
+  sl.registerLazySingleton(
+      () => CreateInvoiceUseCase(sl<InvoiceRepository>()));
+  sl.registerLazySingleton(
+      () => UpdateInvoiceUseCase(sl<InvoiceRepository>()));
+  sl.registerLazySingleton(
+      () => DeleteInvoiceUseCase(sl<InvoiceRepository>()));
+  sl.registerLazySingleton(
+      () => SearchInvoicesUseCase(sl<InvoiceRepository>()));
+  sl.registerLazySingleton(
+      () => GenerateInvoiceNumberUseCase(sl<InvoiceRepository>()));
+
+  // BLoC
+  sl.registerFactory(
+    () => InvoiceBloc(
+      getInvoices: sl<GetInvoicesUseCase>(),
+      createInvoice: sl<CreateInvoiceUseCase>(),
+      updateInvoice: sl<UpdateInvoiceUseCase>(),
+      deleteInvoice: sl<DeleteInvoiceUseCase>(),
+      searchInvoices: sl<SearchInvoicesUseCase>(),
+      repository: sl<InvoiceRepository>(),
+    ),
+  );
+
+  // ──── Client Feature ────
+  // Datasource
+  sl.registerLazySingleton<ClientRemoteDatasource>(
+    () => ClientRemoteDatasource(sl<FirebaseFirestore>()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<ClientRepository>(
+    () => ClientRepositoryImpl(sl<ClientRemoteDatasource>()),
+  );
+
+  // Use Cases
+  sl.registerLazySingleton(
+      () => GetClientsUseCase(sl<ClientRepository>()));
+  sl.registerLazySingleton(
+      () => CreateClientUseCase(sl<ClientRepository>()));
+
+  // BLoC
+  sl.registerFactory(
+    () => ClientBloc(
+      getClients: sl<GetClientsUseCase>(),
+      createClient: sl<CreateClientUseCase>(),
+    ),
+  );
+
+  // ──── Settings Feature ────
+  // Datasource
+  sl.registerLazySingleton<CompanyProfileRemoteDatasource>(
+    () => CompanyProfileRemoteDatasource(sl<FirebaseFirestore>()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<CompanyProfileRepository>(
+    () => CompanyProfileRepositoryImpl(sl<CompanyProfileRemoteDatasource>()),
+  );
+
+  // Use Cases
+  sl.registerLazySingleton(
+      () => GetCompanyProfileUseCase(sl<CompanyProfileRepository>()));
+  sl.registerLazySingleton(
+      () => SaveCompanyProfileUseCase(sl<CompanyProfileRepository>()));
+
+  // BLoC
+  sl.registerFactory(
+    () => CompanyProfileBloc(
+      getProfile: sl<GetCompanyProfileUseCase>(),
+      saveProfile: sl<SaveCompanyProfileUseCase>(),
     ),
   );
 

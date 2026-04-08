@@ -47,6 +47,8 @@ dependencies:
   equatable: ^2.0.8
   url_launcher: ^6.2.5
   shared_preferences: ^2.3.4
+  file_picker: ^11.0.2
+  image: ^4.8.0
 
 dev_dependencies:
   flutter_test:

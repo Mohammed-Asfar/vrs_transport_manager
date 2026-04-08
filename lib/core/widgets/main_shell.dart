@@ -112,8 +112,35 @@ class _Sidebar extends StatelessWidget {
             isActive: location.startsWith('/reports'),
             onTap: () => context.go('/reports'),
           ),
+          _NavItem(
+            icon: Icons.receipt_long_outlined,
+            activeIcon: Icons.receipt_long,
+            label: 'Invoices',
+            isActive: location.startsWith('/invoices'),
+            onTap: () => context.go('/invoices'),
+          ),
 
           const Spacer(),
+
+          // Settings
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+            child: _NavItem(
+              icon: Icons.settings_outlined,
+              activeIcon: Icons.settings,
+              label: 'Settings',
+              isActive: location.startsWith('/settings'),
+              onTap: () => context.go('/settings'),
+            ),
+          ),
+
+          const Divider(
+            height: 0.5,
+            indent: 16,
+            endIndent: 16,
+            color: AppColors.separator,
+          ),
+          const SizedBox(height: 8),
 
           // Dev credit
           Padding(
