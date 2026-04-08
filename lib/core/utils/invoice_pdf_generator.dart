@@ -89,10 +89,11 @@ class InvoicePdfGenerator {
       ),
     );
 
-    await Printing.layoutPdf(
-      onLayout: (format) => pdf.save(),
-      name:
-          'VRS_Invoice_${invoice.invoiceNumber}_${DateFormatter.toDisplay(invoice.invoiceDate)}',
+    final bytes = await pdf.save();
+    await Printing.sharePdf(
+      bytes: bytes,
+      filename:
+          'VRS_Invoice_${invoice.invoiceNumber}_${DateFormatter.toDisplay(invoice.invoiceDate)}.pdf',
     );
   }
 
