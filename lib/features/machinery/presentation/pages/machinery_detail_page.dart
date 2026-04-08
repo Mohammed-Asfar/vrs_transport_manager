@@ -439,7 +439,7 @@ class _MachineryDetailPageState extends State<MachineryDetailPage> {
                             child: Divider(height: 0.5),
                           ),
                           _financialRow('Diesel',
-                              '- ₹${record.diesel.toStringAsFixed(0)}',
+                              '₹${record.diesel.toStringAsFixed(0)}',
                               color: AppColors.textSecondary),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8),

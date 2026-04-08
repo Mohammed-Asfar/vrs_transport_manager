@@ -275,7 +275,7 @@ class MachineryPdfGenerator {
                     '₹${record.totalAmount.toStringAsFixed(0)}', normalStyle),
                 pw.SizedBox(height: 6),
                 _summaryRow('Diesel',
-                    '- ₹${record.diesel.toStringAsFixed(0)}', mutedStyle),
+                    '₹${record.diesel.toStringAsFixed(0)}', mutedStyle),
                 pw.SizedBox(height: 6),
                 _summaryRow('Advance',
                     '- ₹${record.advance.toStringAsFixed(0)}', mutedStyle),

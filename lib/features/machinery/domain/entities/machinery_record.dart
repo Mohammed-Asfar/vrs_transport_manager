@@ -68,7 +68,7 @@ class MachineryRecord extends Equatable {
     final totalAmount = billingMode == BillingMode.monthlyRent
         ? monthlyRent
         : ratePerLoad * totalLoads;
-    final balance = totalAmount - diesel - advance;
+    final balance = totalAmount - advance;
 
     return MachineryRecord(
       id: id,
