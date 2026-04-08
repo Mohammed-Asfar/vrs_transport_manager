@@ -13,6 +13,7 @@ class InvoiceBloc extends Bloc<InvoiceEvent, InvoiceState> {
   final UpdateInvoiceUseCase _updateInvoice;
   final DeleteInvoiceUseCase _deleteInvoice;
   final SearchInvoicesUseCase _searchInvoices;
+  final CommitInvoiceNumberUseCase _commitInvoiceNumber;
   final InvoiceRepository _repository;
 
   StreamSubscription<List<InvoiceRecord>>? _recordsSubscription;
@@ -23,12 +24,14 @@ class InvoiceBloc extends Bloc<InvoiceEvent, InvoiceState> {
     required UpdateInvoiceUseCase updateInvoice,
     required DeleteInvoiceUseCase deleteInvoice,
     required SearchInvoicesUseCase searchInvoices,
+    required CommitInvoiceNumberUseCase commitInvoiceNumber,
     required InvoiceRepository repository,
   })  : _getInvoices = getInvoices,
         _createInvoice = createInvoice,
         _updateInvoice = updateInvoice,
         _deleteInvoice = deleteInvoice,
         _searchInvoices = searchInvoices,
+        _commitInvoiceNumber = commitInvoiceNumber,
         _repository = repository,
         super(const InvoiceInitial()) {
     on<InvoiceLoadRecords>(_onLoadRecords);
@@ -75,6 +78,8 @@ class InvoiceBloc extends Bloc<InvoiceEvent, InvoiceState> {
     Emitter<InvoiceState> emit,
   ) async {
     emit(const InvoiceLoading());
+    // Commit the invoice number counter before saving
+    await _commitInvoiceNumber(event.record.invoiceDate);
     final result = await _createInvoice(event.record);
     result.fold(
       (failure) => emit(InvoiceError(failure.message)),

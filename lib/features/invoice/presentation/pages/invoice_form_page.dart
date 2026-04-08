@@ -99,7 +99,7 @@ class _InvoiceFormPageState extends State<InvoiceFormPage> {
 
   Future<void> _generateInvoiceNumber() async {
     final result =
-        await sl<GenerateInvoiceNumberUseCase>()(_invoiceDate);
+        await sl<PreviewInvoiceNumberUseCase>()(_invoiceDate);
     result.fold(
       (_) {},
       (number) {

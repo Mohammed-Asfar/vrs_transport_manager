@@ -173,7 +173,9 @@ Future<void> initDependencies() async {
   sl.registerLazySingleton(
       () => SearchInvoicesUseCase(sl<InvoiceRepository>()));
   sl.registerLazySingleton(
-      () => GenerateInvoiceNumberUseCase(sl<InvoiceRepository>()));
+      () => PreviewInvoiceNumberUseCase(sl<InvoiceRepository>()));
+  sl.registerLazySingleton(
+      () => CommitInvoiceNumberUseCase(sl<InvoiceRepository>()));
 
   // BLoC
   sl.registerFactory(
@@ -183,6 +185,7 @@ Future<void> initDependencies() async {
       updateInvoice: sl<UpdateInvoiceUseCase>(),
       deleteInvoice: sl<DeleteInvoiceUseCase>(),
       searchInvoices: sl<SearchInvoicesUseCase>(),
+      commitInvoiceNumber: sl<CommitInvoiceNumberUseCase>(),
       repository: sl<InvoiceRepository>(),
     ),
   );

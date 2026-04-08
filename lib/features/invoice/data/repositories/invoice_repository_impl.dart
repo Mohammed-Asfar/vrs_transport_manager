@@ -80,9 +80,19 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
   }
 
   @override
-  Future<Either<Failure, String>> generateInvoiceNumber(DateTime date) async {
+  Future<Either<Failure, String>> previewNextInvoiceNumber(DateTime date) async {
     try {
-      final number = await _datasource.generateInvoiceNumber(date);
+      final number = await _datasource.previewNextInvoiceNumber(date);
+      return Right(number);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> commitInvoiceNumber(DateTime date) async {
+    try {
+      final number = await _datasource.commitInvoiceNumber(date);
       return Right(number);
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));

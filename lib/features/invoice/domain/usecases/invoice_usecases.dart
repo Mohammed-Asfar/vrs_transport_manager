@@ -57,11 +57,20 @@ class SearchInvoicesUseCase {
   }
 }
 
-class GenerateInvoiceNumberUseCase {
+class PreviewInvoiceNumberUseCase {
   final InvoiceRepository _repository;
-  GenerateInvoiceNumberUseCase(this._repository);
+  PreviewInvoiceNumberUseCase(this._repository);
 
   Future<Either<Failure, String>> call(DateTime date) {
-    return _repository.generateInvoiceNumber(date);
+    return _repository.previewNextInvoiceNumber(date);
+  }
+}
+
+class CommitInvoiceNumberUseCase {
+  final InvoiceRepository _repository;
+  CommitInvoiceNumberUseCase(this._repository);
+
+  Future<Either<Failure, String>> call(DateTime date) {
+    return _repository.commitInvoiceNumber(date);
   }
 }

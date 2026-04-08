@@ -10,5 +10,6 @@ abstract class InvoiceRepository {
   Future<Either<Failure, void>> updateInvoice(InvoiceRecord record);
   Future<Either<Failure, void>> deleteInvoice(String id);
   Future<Either<Failure, List<InvoiceRecord>>> searchInvoices(String query);
-  Future<Either<Failure, String>> generateInvoiceNumber(DateTime date);
+  Future<Either<Failure, String>> previewNextInvoiceNumber(DateTime date);
+  Future<Either<Failure, String>> commitInvoiceNumber(DateTime date);
 }

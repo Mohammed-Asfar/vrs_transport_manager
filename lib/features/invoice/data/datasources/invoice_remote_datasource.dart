@@ -99,8 +99,8 @@ class InvoiceRemoteDatasource {
     }
   }
 
-  /// Generates the next invoice number for the given date and increments the counter.
-  Future<String> generateInvoiceNumber(DateTime date) async {
+  /// Previews the next invoice number without incrementing the counter.
+  Future<String> previewNextInvoiceNumber(DateTime date) async {
     try {
       final key = InvoiceNumberFormatter.counterKey(date);
 
@@ -110,7 +110,26 @@ class InvoiceRemoteDatasource {
       final lastSerial = (counters[key] as num?)?.toInt() ?? 0;
       final nextSerial = lastSerial + 1;
 
-      // Update counter
+      return InvoiceNumberFormatter.format(date: date, serial: nextSerial);
+    } on ServerException {
+      rethrow;
+    } catch (e) {
+      throw ServerException('Failed to preview invoice number: $e');
+    }
+  }
+
+  /// Increments the counter and returns the next invoice number.
+  Future<String> commitInvoiceNumber(DateTime date) async {
+    try {
+      final key = InvoiceNumberFormatter.counterKey(date);
+
+      final counterSnap = await _counterDoc.get();
+      final counters =
+          (counterSnap.data() ?? {}).cast<String, dynamic>();
+      final lastSerial = (counters[key] as num?)?.toInt() ?? 0;
+      final nextSerial = lastSerial + 1;
+
+      // Update counter only on commit
       await _counterDoc.set({key: nextSerial}, SetOptions(merge: true));
 
       return InvoiceNumberFormatter.format(date: date, serial: nextSerial);
