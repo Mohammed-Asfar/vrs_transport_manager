@@ -1,6 +1,7 @@
-- Added Company & Transporter dual export modes
-- Company export: single continuous table, no financials, KM halved for single-trip calculation, no transporter names
-- Transporter export: unchanged (full columns, financials, per-transporter pages)
-- Added Today date filter preset
-- Fixed dropdown crash when switching date ranges with stale transporter selection
-- Automated CI/CD release pipeline via GitHub Actions
+- Added tax invoice feature with GST support (CGST, SGST, IGST) and PDF export
+- Added company profile settings (logo, signature, bank details, GSTIN)
+- Added client management for invoice billing
+- Redesigned invoice PDF template with professional layout
+- PDF now opens save/share dialog instead of print dialog
+- Fixed invoice number incrementing when form is opened without saving
+- Fixed diesel field in machinery records stored as info-only without reducing balance

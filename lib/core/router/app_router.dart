@@ -20,6 +20,14 @@ import 'package:vrs_transport_manager/features/machinery/presentation/bloc/machi
 import 'package:vrs_transport_manager/features/machinery/presentation/pages/machinery_list_page.dart';
 import 'package:vrs_transport_manager/features/machinery/presentation/pages/machinery_form_page.dart';
 import 'package:vrs_transport_manager/features/machinery/presentation/pages/machinery_detail_page.dart';
+import 'package:vrs_transport_manager/features/invoice/domain/entities/invoice_record.dart';
+import 'package:vrs_transport_manager/features/invoice/domain/usecases/invoice_usecases.dart';
+import 'package:vrs_transport_manager/features/invoice/presentation/bloc/invoice_bloc.dart';
+import 'package:vrs_transport_manager/features/invoice/presentation/pages/invoice_form_page.dart';
+import 'package:vrs_transport_manager/features/invoice/presentation/pages/invoice_detail_page.dart';
+import 'package:vrs_transport_manager/features/invoice/presentation/pages/invoice_list_page.dart';
+import 'package:vrs_transport_manager/features/settings/presentation/bloc/company_profile_bloc.dart';
+import 'package:vrs_transport_manager/features/settings/presentation/pages/settings_page.dart';
 
 class AppRouter {
   final AuthBloc authBloc;
@@ -218,6 +226,86 @@ class AppRouter {
               );
             },
           ),
+
+          // ──── Invoice Routes ────
+          GoRoute(
+            path: '/invoices',
+            pageBuilder: (context, state) => _fadeTransition(
+              state,
+              BlocProvider(
+                create: (_) => sl<InvoiceBloc>(),
+                child: const InvoiceListPage(),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/invoices/create',
+            pageBuilder: (context, state) => _fadeTransition(
+              state,
+              BlocProvider(
+                create: (_) => sl<InvoiceBloc>(),
+                child: const InvoiceFormPage(),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/invoices/edit/:id',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return _fadeTransition(
+                state,
+                BlocProvider(
+                  create: (_) => sl<InvoiceBloc>(),
+                  child: FutureBuilder<InvoiceRecord?>(
+                    future: _loadInvoice(id),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Scaffold(
+                          body: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      if (snapshot.hasError || snapshot.data == null) {
+                        return Scaffold(
+                          appBar: AppBar(title: const Text('Error')),
+                          body: Center(
+                            child: Text(
+                                'Failed to load invoice: ${snapshot.error}'),
+                          ),
+                        );
+                      }
+                      return InvoiceFormPage(existingRecord: snapshot.data);
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+
+          GoRoute(
+            path: '/invoices/detail/:id',
+            pageBuilder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return _fadeTransition(
+                state,
+                BlocProvider(
+                  create: (_) => sl<InvoiceBloc>(),
+                  child: InvoiceDetailPage(recordId: id),
+                ),
+              );
+            },
+          ),
+
+          // ──── Settings Route ────
+          GoRoute(
+            path: '/settings',
+            pageBuilder: (context, state) => _fadeTransition(
+              state,
+              BlocProvider(
+                create: (_) => sl<CompanyProfileBloc>(),
+                child: const SettingsPage(),
+              ),
+            ),
+          ),
         ],
       ),
     ],
@@ -240,6 +328,11 @@ class AppRouter {
 
   Future<TransportRecord?> _loadRecord(String id) async {
     final result = await sl<GetRecordByIdUseCase>()(id);
+    return result.fold((_) => null, (record) => record);
+  }
+
+  Future<InvoiceRecord?> _loadInvoice(String id) async {
+    final result = await sl<GetInvoiceByIdUseCase>()(id);
     return result.fold((_) => null, (record) => record);
   }
 

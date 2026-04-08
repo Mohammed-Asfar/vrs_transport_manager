@@ -12,8 +12,9 @@ VRS Transport Manager is a **Flutter Windows desktop application** for VRS Enter
 # Run the app (Windows desktop)
 flutter run -d windows
 
-# Release (from develop branch): bumps version, merges to main, triggers GitHub Actions
-./scripts/release.sh 1.3.0
+# Release (from develop branch): bumps version, builds, creates installer, merges to main, uploads to GitHub Releases
+# GitHub Actions then updates Firestore with download URL
+./scripts/release.sh 1.5.0 "Added new feature X, fixed bug Y"
 
 # Build for Windows
 flutter build windows
@@ -25,7 +26,7 @@ flutter analyze
 flutter pub get
 ```
 
-No test suite exists. The `test/` directory is not present.
+No test suite exists. Do not create a `test/` directory or suggest writing tests unless explicitly asked.
 
 ## Architecture
 
@@ -55,7 +56,7 @@ Each feature follows: `data/` (datasources, models, repository impls) → `domai
 - **Routing**: GoRouter with auth-based redirects via `_AuthNotifier`. Protected routes require `AuthAuthenticated` state. All authenticated routes are wrapped in a `ShellRoute` that provides the persistent sidebar (`MainShell`). Routes: `/splash`, `/login`, `/` (dashboard), `/reports`, `/create`, `/edit/:id`, `/detail/:id`, `/machinery`, `/machinery/create`, `/machinery/edit/:id`, `/machinery/detail/:id`. Edit routes lazy-load record data using their respective `GetRecordByIdUseCase`. Shell routes use `CustomTransitionPage` with a 150ms crossfade (no slide/pop).
 - **Real-time updates**: `TransportRepository.watchRecords()` streams live Firestore changes to the UI. TransportBloc handles this without overwriting active search results.
 - **Search**: Client-side filtering (Firestore limitation) on location, vehicle numbers, and transporter names.
-- **PDF export**: Three generators — `PdfGenerator` for transport records, `MachineryPdfGenerator` for machinery records, `ReportPdfGenerator` for aggregated reports. All use Noto Sans font for rupee symbol (₹) support.
+- **PDF export**: Three generators — `PdfGenerator` for transport records, `MachineryPdfGenerator` for machinery records, `ReportPdfGenerator` for aggregated reports. All use Noto Sans font for rupee symbol (₹) support. `ReportPdfGenerator` has two export modes: **Company** (single continuous table, no financials, KM halved, no transporter names) and **Transporter** (summary page + per-transporter detail pages with full financials).
 
 ## Firestore
 
@@ -71,7 +72,7 @@ Four BLoCs:
 - **AuthBloc**: `AuthCheckRequested` → monitors Firebase auth stream (with 3s timeout for Windows C++ SDK); `AuthLoginRequested` / `AuthLogoutRequested`
 - **TransportBloc**: Load, Create, Update, Delete, Search, ClearSearch — successful mutations auto-reload the list; subscribes to real-time Firestore stream
 - **MachineryBloc**: Same pattern as TransportBloc. Supports two billing modes: `monthlyRent` (fixed monthly rate) and `perLoad` (ratePerLoad × totalLoads)
-- **ReportBloc**: `ReportGenerate` (date range + view mode), `ReportExportPdf`, `ReportReset` — supports transporter-wise and vehicle-wise grouping with proportional diesel/advance allocation. Preset date filters: thisWeek, lastWeek, thisMonth, custom.
+- **ReportBloc**: `ReportGenerate` (date range + view mode), `ReportExportPdf` (with `ExportTarget`: company or transporter), `ReportReset` — supports transporter-wise grouping with proportional diesel/advance allocation. Preset date filters: today, thisWeek, lastWeek, thisMonth, custom.
 
 ## UI Design
 
@@ -82,7 +83,7 @@ Dark-only macOS-inspired design system with Material 3:
 - System font: Segoe UI on Windows
 - Typography: color-agnostic styles defined in `app_text_styles.dart`, colors applied at usage site
 - Asset: `assets/logo_512.png` (app logo)
-- **Shared widgets**: `AppToolbar`, `QuickStatsStrip`, `FormSection`, `FinancialSummaryCard`, `SidebarNavItem` in `core/widgets/`
+- **Shared widgets**: `AppToolbar`, `QuickStatsStrip`, `FormSection`, `FinancialSummaryCard`, `SidebarNavItem`, `AppTextField`, `ConfirmationDialog`, `LoadingOverlay` in `core/widgets/`
 
 ## Versioning & Installer
 
@@ -91,18 +92,39 @@ App version is defined in **three places** that must stay in sync:
 - `pubspec.yaml` — `version:` field
 - `installer.iss` — `AppVersion` and `OutputBaseFilename` (Inno Setup script for Windows installer)
 
-### Automated Release (GitHub Actions)
+### Automated Release
 
-**Branching**: `develop` (daily work) → merge into `main` (triggers release).
+**Branching**: `develop` (daily work) → merge into `main` (triggers Firestore update).
+
+**Release script** (`scripts/release.sh`): does everything locally + creates the GitHub Release, then GitHub Actions only updates Firestore.
 
 ```bash
-# From develop branch: bump version, commit, merge to main, push
-./scripts/release.sh 1.3.0
+# Usage (must be on develop branch, no uncommitted changes):
+./scripts/release.sh <version> "<release notes>"
+
+# Example:
+./scripts/release.sh 1.5.0 "Added company export, fixed dropdown crash"
 ```
 
-When `main` receives a push, GitHub Actions (`.github/workflows/release.yml`): reads version from `app_version.dart` → builds Flutter Windows → compiles Inno Setup installer → creates GitHub Release with .exe + tag → updates Firestore `app_config/version` with direct download URL. Skips if a release already exists for that version.
+**What the script does:**
+1. Updates version in `app_version.dart`, `pubspec.yaml`, `installer.iss`
+2. Writes release notes to `RELEASE_NOTES.md`
+3. Runs `flutter build windows --release`
+4. Compiles Inno Setup installer (requires Inno Setup 6 at `D:/Software/Inno Setup 6/ISCC.exe`)
+5. Commits version bump on `develop`, merges `develop` → `main`, pushes both
+6. Creates GitHub Release with `.exe` attached via `gh` CLI
 
-**One-time setup**: Add `FIREBASE_SERVICE_ACCOUNT` secret in GitHub repo settings (Settings → Secrets → Actions). Value = contents of Firebase service account JSON key (Firebase Console → Project Settings → Service Accounts → Generate New Private Key).
+`RELEASE_NOTES.md` is auto-generated by the release script — do not edit it manually.
+
+**What GitHub Actions does** (triggered by push to `main`):
+- Reads version from `app_version.dart` and `RELEASE_NOTES.md`
+- Updates Firestore `app_config/version` with download URL and release notes (sets `force_update: true` by default)
+- Runs unconditionally on every push to `main` (no duplicate-version check)
+
+**Prerequisites:**
+- `gh` CLI authenticated (`gh auth login`)
+- Inno Setup 6 installed at `D:/Software/Inno Setup 6/`
+- `FIREBASE_SERVICE_ACCOUNT` secret in GitHub repo settings (Settings → Secrets → Actions). Value = Firebase service account JSON key.
 
 ### Manual Build
 
@@ -110,11 +132,19 @@ When `main` receives a push, GitHub Actions (`.github/workflows/release.yml`): r
 
 ## In-App Update Checker
 
-`UpdateCheckerService` reads from Firestore `app_config/version` with fields: `latest_version`, `download_url`, `release_notes`, `force_update`. When `latest_version` exceeds `AppVersion.currentVersion` (semantic version comparison), an update dialog is shown. `force_update` prevents dismissal.
+`UpdateCheckerService` reads from Firestore `app_config/version` with fields: `latest_version`, `download_url`, `release_notes`, `force_update`, `updated_at`. When `latest_version` exceeds `AppVersion.currentVersion` (semantic version comparison), an update dialog is shown. `force_update` prevents dismissal.
 
 ## Adding a New Feature
 
 Follow the existing pattern: create `data/`, `domain/`, `presentation/` directories under `features/<name>/`. Then register all new datasources, repositories, use cases, and BLoCs in `di/injection_container.dart` — the app won't see them otherwise. Add the route in `core/router/app_router.dart`.
+
+## Important Gotchas
+
+- `AppTheme.lightTheme` is misleadingly named — it's actually the dark theme. Don't create a second theme.
+- `firebase_options.dart` is hand-written, not generated by FlutterFire CLI. Edit it directly if Firebase config changes.
+- `force_update` in Firestore `app_config/version` is hardcoded to `true` in the GitHub Actions workflow. To make updates dismissable, manually set it to `false` in Firestore Console after release.
+- The `TransportBloc` subscribes to a real-time Firestore stream. When adding new events that modify state, ensure they don't overwrite active search results (check `_isSearchActive` pattern).
+- Dart SDK constraint is `^3.11.0` (not Flutter SDK — the Flutter SDK version follows from this).
 
 ## Tech Stack
 
