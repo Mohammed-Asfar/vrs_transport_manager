@@ -16,8 +16,7 @@ class InvoicePdfGenerator {
   static const _dark = PdfColors.grey900;
   static const _muted = PdfColors.grey600;
   static const _border = PdfColors.grey400;
-  static const _headerBg = PdfColor.fromInt(0xFFF2F2F7);
-  static const _lightBg = PdfColor.fromInt(0xFFFAFAFA);
+  static const _headerBg = PdfColor.fromInt(0xFFF0F0F0);
 
   static Future<void> generateAndPrint(
     InvoiceRecord invoice,
@@ -28,13 +27,15 @@ class InvoicePdfGenerator {
     final font = await PdfGoogleFonts.notoSansRegular();
     final fontBold = await PdfGoogleFonts.notoSansBold();
 
-    final bold = pw.TextStyle(font: fontBold, fontFallback: [font]);
-    final normal = pw.TextStyle(font: font, fontFallback: [font]);
-    final s9 = normal.copyWith(fontSize: 9, color: _dark);
-    final s9b = bold.copyWith(fontSize: 9, color: _dark);
-    final s8 = normal.copyWith(fontSize: 8, color: _dark);
-    final s8b = bold.copyWith(fontSize: 8, color: _dark);
-    final s8m = normal.copyWith(fontSize: 8, color: _muted);
+    final bold = pw.TextStyle(font: fontBold, fontSize: 8, color: _dark, fontFallback: [font]);
+    final normal = pw.TextStyle(font: font, fontSize: 8, color: _dark, fontFallback: [font]);
+
+    // Font styles - compact for single page
+    final s8 = normal;
+    final s8b = bold;
+    final s7 = normal.copyWith(fontSize: 7);
+    final s7b = bold.copyWith(fontSize: 7);
+    final s7m = normal.copyWith(fontSize: 7, color: _muted);
 
     // Decode logo/signature if available
     pw.MemoryImage? logoImage;
@@ -53,46 +54,37 @@ class InvoicePdfGenerator {
     }
 
     pdf.addPage(
-      pw.MultiPage(
+      pw.Page(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(40),
+        margin: const pw.EdgeInsets.all(32),
         build: (context) {
-          return [
-            // Company header
-            _buildCompanyHeader(profile, logoImage, bold, s9, s8m),
-            pw.SizedBox(height: 8),
+          return pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Company header
+              _buildCompanyHeader(profile, logoImage, bold, normal, s7m),
+              pw.SizedBox(height: 8),
 
-            // Invoice number + date
-            _buildInvoiceMeta(invoice, s9b, s9),
-            pw.SizedBox(height: 12),
+              // TAX INVOICE title + Invoice No/Date
+              _buildTaxInvoiceRow(invoice, bold, s8, s8b),
+              pw.SizedBox(height: 8),
 
-            // Billed To
-            _buildBilledTo(invoice, s9b, s9, s8m),
-            pw.SizedBox(height: 14),
+              // Billed To
+              _buildBilledTo(invoice, s8b, s8),
+              pw.SizedBox(height: 8),
 
-            // Line items table (with sections)
-            _buildLineItemsTable(invoice, s8b, s8, s8m),
-            pw.SizedBox(height: 4),
+              // Main table (line items + tax + recoveries + total)
+              _buildFullTable(invoice, s7b, s7, s8b, s8),
 
-            // Tax + Sub Total
-            _buildTaxBreakdown(invoice, s9b, s9),
-            pw.SizedBox(height: 4),
+              // In Words
+              pw.SizedBox(height: 6),
+              _buildAmountInWords(invoice, s8, s8b),
+              pw.SizedBox(height: 10),
 
-            // Recoveries
-            _buildRecoveries(invoice, s9b, s9),
-            pw.SizedBox(height: 4),
-
-            // Total Invoice Value
-            _buildTotalInvoiceValue(invoice, bold, s9),
-            pw.SizedBox(height: 16),
-
-            // Amount in words
-            _buildAmountInWords(invoice, s9, s9b),
-            pw.SizedBox(height: 20),
-
-            // Bank details + Signature
-            _buildFooter(profile, signatureImage, s9b, s9, s8m),
-          ];
+              // Bank details + Signature
+              _buildFooter(profile, signatureImage, s8b, s8, s7m),
+            ],
+          );
         },
       ),
     );
@@ -103,6 +95,8 @@ class InvoicePdfGenerator {
           'VRS_Invoice_${invoice.invoiceNumber}_${DateFormatter.toDisplay(invoice.invoiceDate)}',
     );
   }
+
+  // ── Company Header ──
 
   static pw.Widget _buildCompanyHeader(
     CompanyProfile? profile,
@@ -120,52 +114,63 @@ class InvoicePdfGenerator {
     final tagline = profile?.tagline ?? '';
 
     return pw.Container(
-      padding: const pw.EdgeInsets.only(bottom: 10),
+      padding: const pw.EdgeInsets.only(bottom: 8),
       decoration: const pw.BoxDecoration(
-        border: pw.Border(bottom: pw.BorderSide(color: _border, width: 1)),
+        border: pw.Border(bottom: pw.BorderSide(color: _border, width: 0.5)),
       ),
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
           // Left: GSTIN
-          if (gstin.isNotEmpty)
-            pw.Text('GSTIN: $gstin', style: muted),
+          pw.SizedBox(
+            width: 130,
+            child: gstin.isNotEmpty
+                ? pw.Text('GSTIN: $gstin',
+                    style: normal.copyWith(fontSize: 7))
+                : pw.SizedBox(),
+          ),
           pw.Spacer(),
-          // Center: Logo + company name
+          // Center: Logo + company name + tagline + address
           pw.Column(
             children: [
-              if (logo != null)
-                pw.Image(logo, width: 50, height: 50),
-              pw.SizedBox(height: 4),
+              if (logo != null) ...[
+                pw.Image(logo, width: 60, height: 60),
+                pw.SizedBox(height: 3),
+              ],
               pw.Text(name.toUpperCase(),
-                  style: bold.copyWith(fontSize: 16, letterSpacing: 1)),
+                  style: bold.copyWith(fontSize: 18, letterSpacing: 1)),
               if (tagline.isNotEmpty) ...[
                 pw.SizedBox(height: 2),
                 pw.Container(
                   padding: const pw.EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 3),
+                      horizontal: 8, vertical: 2),
                   decoration: pw.BoxDecoration(
                     border: pw.Border.all(color: _border, width: 0.5),
                   ),
-                  child: pw.Text(tagline, style: muted.copyWith(fontSize: 7)),
+                  child: pw.Text(tagline,
+                      style: normal.copyWith(fontSize: 7)),
                 ),
               ],
               if (address.isNotEmpty) ...[
-                pw.SizedBox(height: 3),
+                pw.SizedBox(height: 2),
                 pw.Text(address,
-                    style: muted.copyWith(fontSize: 7),
+                    style: normal.copyWith(fontSize: 7),
                     textAlign: pw.TextAlign.center),
               ],
             ],
           ),
           pw.Spacer(),
-          // Right: Contact
+          // Right: Contact info
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
-              if (phone1.isNotEmpty) pw.Text(phone1, style: normal),
-              if (phone2.isNotEmpty) pw.Text(phone2, style: normal),
-              if (email.isNotEmpty) pw.Text(email, style: muted),
+              if (phone1.isNotEmpty)
+                pw.Text(phone1, style: bold.copyWith(fontSize: 9)),
+              if (phone2.isNotEmpty)
+                pw.Text(phone2, style: normal.copyWith(fontSize: 8)),
+              if (email.isNotEmpty)
+                pw.Text('Email: $email',
+                    style: normal.copyWith(fontSize: 7)),
             ],
           ),
         ],
@@ -173,58 +178,85 @@ class InvoicePdfGenerator {
     );
   }
 
-  static pw.Widget _buildInvoiceMeta(
+  // ── TAX INVOICE + Invoice No/Date row ──
+
+  static pw.Widget _buildTaxInvoiceRow(
     InvoiceRecord invoice,
     pw.TextStyle bold,
     pw.TextStyle normal,
+    pw.TextStyle normalBold,
   ) {
     return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+      decoration: pw.BoxDecoration(
+        color: _headerBg,
+        border: pw.Border.all(color: _border, width: 0.5),
+      ),
       child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.center,
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
         children: [
-          pw.Spacer(),
-          pw.Column(
-            children: [
-              pw.Text('TAX INVOICE',
-                  style: bold.copyWith(fontSize: 12, letterSpacing: 1)),
-            ],
+          // Left spacer same width as right column to keep title centered
+          pw.SizedBox(width: 160),
+          pw.Expanded(
+            child: pw.Center(
+              child: pw.Text('TAX INVOICE',
+                  style: bold.copyWith(fontSize: 14, letterSpacing: 2)),
+            ),
           ),
-          pw.Spacer(),
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              pw.Text('Invoice No: ${invoice.invoiceNumber}', style: bold),
-              pw.SizedBox(height: 2),
-              pw.Text(
-                  'Invoice Date: ${DateFormatter.toDisplay(invoice.invoiceDate)}',
-                  style: normal),
-            ],
+          // Right: Invoice No / Date
+          pw.SizedBox(
+            width: 160,
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.RichText(
+                  text: pw.TextSpan(children: [
+                    pw.TextSpan(
+                        text: 'Invoice No : ', style: normalBold),
+                    pw.TextSpan(
+                        text: invoice.invoiceNumber, style: normal),
+                  ]),
+                ),
+                pw.SizedBox(height: 2),
+                pw.RichText(
+                  text: pw.TextSpan(children: [
+                    pw.TextSpan(
+                        text: 'Invoice Date : ', style: normalBold),
+                    pw.TextSpan(
+                        text: DateFormatter.toDisplay(invoice.invoiceDate),
+                        style: normal),
+                  ]),
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
+
+  // ── Billed To ──
 
   static pw.Widget _buildBilledTo(
     InvoiceRecord invoice,
     pw.TextStyle bold,
     pw.TextStyle normal,
-    pw.TextStyle muted,
   ) {
     final client = invoice.client;
     return pw.Container(
-      padding: const pw.EdgeInsets.all(10),
+      width: 280,
+      padding: const pw.EdgeInsets.all(8),
       decoration: pw.BoxDecoration(
         border: pw.Border.all(color: _border, width: 0.5),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text('Billed To:', style: muted),
-          pw.SizedBox(height: 4),
-          pw.Text(client.companyName, style: bold),
+          pw.Text('Billed To :', style: bold.copyWith(fontSize: 7)),
+          pw.SizedBox(height: 3),
+          pw.Text(client.companyName, style: bold.copyWith(fontSize: 9)),
           if (client.gstin.isNotEmpty)
-            pw.Text('GSTIN: ${client.gstin}', style: normal),
+            pw.Text('GSTIN : ${client.gstin}', style: normal),
           if (client.address.isNotEmpty)
             pw.Text(client.address, style: normal),
         ],
@@ -232,11 +264,14 @@ class InvoicePdfGenerator {
     );
   }
 
-  static pw.Widget _buildLineItemsTable(
+  // ── Full Table (line items + tax + recoveries + total) ──
+
+  static pw.Widget _buildFullTable(
     InvoiceRecord invoice,
-    pw.TextStyle headerStyle,
-    pw.TextStyle cellStyle,
-    pw.TextStyle mutedStyle,
+    pw.TextStyle hStyle,
+    pw.TextStyle cStyle,
+    pw.TextStyle boldStyle,
+    pw.TextStyle normalStyle,
   ) {
     final rows = <pw.TableRow>[];
 
@@ -244,34 +279,29 @@ class InvoicePdfGenerator {
     rows.add(pw.TableRow(
       decoration: const pw.BoxDecoration(color: _headerBg),
       children: [
-        _hCell('SL.\nNO', headerStyle),
-        _hCell('SAC\nCODE', headerStyle),
-        _hCell('DESCRIPTION', headerStyle, align: pw.Alignment.centerLeft),
-        _hCell('UNIT', headerStyle),
-        _hCell('QTY', headerStyle),
-        _hCell('RATE', headerStyle),
-        _hCell('TOTAL\nAMOUNT', headerStyle),
+        _hCell('SL.\nNO', hStyle),
+        _hCell('SAC\nCODE', hStyle),
+        _hCell('DESCRIPTION', hStyle, align: pw.Alignment.centerLeft),
+        _hCell('UNIT', hStyle),
+        _hCell('QTY', hStyle),
+        _hCell('RATE', hStyle),
+        _hCell('TOTAL\nAMOUNT', hStyle),
       ],
     ));
 
-    int globalSl = 0;
+    // Sections + line items
+    int slNo = 0;
     for (final section in invoice.sections) {
-      // Section header row
+      // Section header
       if (section.header.isNotEmpty) {
         rows.add(pw.TableRow(
-          decoration: const pw.BoxDecoration(color: _lightBg),
           children: [
-            pw.Container(
-              padding: const pw.EdgeInsets.symmetric(
-                  horizontal: 6, vertical: 5),
-              child: pw.Text('', style: cellStyle),
-            ),
+            pw.Container(),
             pw.Container(),
             pw.Container(
-              padding: const pw.EdgeInsets.symmetric(
-                  horizontal: 6, vertical: 5),
-              child: pw.Text('${section.header}:-',
-                  style: headerStyle),
+              padding:
+                  const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+              child: pw.Text('${section.header}:-', style: hStyle),
             ),
             pw.Container(),
             pw.Container(),
@@ -281,19 +311,17 @@ class InvoicePdfGenerator {
         ));
       }
 
-      // Line item rows
       for (final item in section.lineItems) {
-        globalSl++;
+        slNo++;
         rows.add(pw.TableRow(
           children: [
-            _cell('$globalSl', cellStyle),
-            _cell(item.sacCode, cellStyle),
-            _cell(item.description, cellStyle,
-                align: pw.Alignment.centerLeft),
-            _cell(item.unit, cellStyle),
-            _cell(item.qty.toStringAsFixed(1), cellStyle),
-            _cell(item.rate.toStringAsFixed(2), cellStyle),
-            _cell(_inr.format(item.totalAmount), cellStyle),
+            _cell('$slNo', cStyle),
+            _cell(item.sacCode, cStyle),
+            _cell(item.description, cStyle, align: pw.Alignment.centerLeft),
+            _cell(item.unit, cStyle),
+            _cell(item.qty.toStringAsFixed(1), cStyle),
+            _cell(item.rate.toStringAsFixed(2), cStyle),
+            _cell(_inr.format(item.totalAmount), cStyle),
           ],
         ));
       }
@@ -303,133 +331,189 @@ class InvoicePdfGenerator {
     rows.add(pw.TableRow(
       decoration: const pw.BoxDecoration(color: _headerBg),
       children: [
-        _cell('', headerStyle),
-        _cell('', headerStyle),
-        _cell('', headerStyle),
-        _cell('', headerStyle),
-        _cell('', headerStyle),
-        _hCell('Total Value', headerStyle),
-        _hCell(_inr.format(invoice.totalValue), headerStyle),
+        _cell('', cStyle),
+        _cell('', cStyle),
+        _cell('', cStyle),
+        _cell('', cStyle),
+        _cell('', cStyle),
+        _hCell('Total Value', hStyle),
+        _hCell(_inr.format(invoice.totalValue), hStyle),
+      ],
+    ));
+
+    // CGST row
+    if (invoice.cgstPercent > 0) {
+      slNo++;
+      rows.add(_taxRow(
+        '',
+        'CGST @ ${invoice.cgstPercent.toStringAsFixed(0)}%',
+        _inr.format(invoice.cgstAmount),
+        cStyle,
+      ));
+    }
+
+    // SGST row
+    if (invoice.sgstPercent > 0) {
+      slNo++;
+      rows.add(_taxRow(
+        '',
+        'SGST @ ${invoice.sgstPercent.toStringAsFixed(0)}%',
+        _inr.format(invoice.sgstAmount),
+        cStyle,
+      ));
+    }
+
+    // IGST row
+    if (invoice.igstPercent > 0) {
+      slNo++;
+      rows.add(_taxRow(
+        '',
+        'IGST @ ${invoice.igstPercent.toStringAsFixed(0)}%',
+        _inr.format(invoice.igstAmount),
+        cStyle,
+      ));
+    }
+
+    // Sub Total row
+    final subTotalSlNo = slNo + 1;
+    rows.add(pw.TableRow(
+      decoration: const pw.BoxDecoration(color: _headerBg),
+      children: [
+        _cell('$subTotalSlNo', hStyle),
+        _cell('', hStyle),
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+          alignment: pw.Alignment.centerLeft,
+          child: pw.Text('Sub Total', style: hStyle),
+        ),
+        _cell('', hStyle),
+        _cell('', hStyle),
+        _cell('', hStyle),
+        _hCell(_inr.format(invoice.subTotal), hStyle),
+      ],
+    ));
+
+    // Recoveries section
+    if (invoice.tdsPercent > 0 || invoice.retentionPercent > 0) {
+      // Recoveries header
+      rows.add(pw.TableRow(
+        children: [
+          pw.Container(
+            padding:
+                const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            child: pw.Text('', style: cStyle),
+          ),
+          pw.Container(),
+          pw.Container(
+            padding:
+                const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+            child: pw.Text('Recoveries', style: hStyle),
+          ),
+          pw.Container(),
+          pw.Container(),
+          pw.Container(),
+          pw.Container(),
+        ],
+      ));
+
+      int recoverySlNo = subTotalSlNo;
+
+      if (invoice.tdsPercent > 0) {
+        recoverySlNo++;
+        rows.add(pw.TableRow(
+          children: [
+            _cell('$recoverySlNo', cStyle),
+            _cell('', cStyle),
+            pw.Container(
+              padding:
+                  const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+              alignment: pw.Alignment.centerLeft,
+              child: pw.Text('TDS', style: cStyle),
+            ),
+            _cell('', cStyle),
+            _cell('', cStyle),
+            _cell(
+                '${invoice.tdsPercent.toStringAsFixed(0)}%', cStyle),
+            _cell(_inr.format(invoice.tdsAmount), cStyle),
+          ],
+        ));
+      }
+
+      if (invoice.retentionPercent > 0) {
+        recoverySlNo++;
+        rows.add(pw.TableRow(
+          children: [
+            _cell('$recoverySlNo', cStyle),
+            _cell('', cStyle),
+            pw.Container(
+              padding:
+                  const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+              alignment: pw.Alignment.centerLeft,
+              child: pw.Text('Retention Money', style: cStyle),
+            ),
+            _cell('', cStyle),
+            _cell('', cStyle),
+            _cell(
+                '${invoice.retentionPercent.toStringAsFixed(0)}%', cStyle),
+            _cell(_inr.format(invoice.retentionAmount), cStyle),
+          ],
+        ));
+      }
+    }
+
+    // Total Invoice Value row
+    rows.add(pw.TableRow(
+      decoration: const pw.BoxDecoration(color: _headerBg),
+      children: [
+        _cell('', hStyle),
+        _cell('', hStyle),
+        _cell('', hStyle),
+        _cell('', hStyle),
+        _cell('', hStyle),
+        _hCell('Total Invoice Value', hStyle),
+        _hCell(_inr.format(invoice.totalInvoiceValue), hStyle),
       ],
     ));
 
     return pw.Table(
       border: pw.TableBorder.all(color: _border, width: 0.5),
       columnWidths: {
-        0: const pw.FixedColumnWidth(30),
-        1: const pw.FixedColumnWidth(48),
+        0: const pw.FixedColumnWidth(28),
+        1: const pw.FixedColumnWidth(46),
         2: const pw.FlexColumnWidth(3),
-        3: const pw.FixedColumnWidth(40),
-        4: const pw.FixedColumnWidth(55),
-        5: const pw.FixedColumnWidth(50),
+        3: const pw.FixedColumnWidth(38),
+        4: const pw.FixedColumnWidth(52),
+        5: const pw.FixedColumnWidth(55),
         6: const pw.FixedColumnWidth(72),
       },
       children: rows,
     );
   }
 
-  static pw.Widget _buildTaxBreakdown(
-    InvoiceRecord invoice,
-    pw.TextStyle bold,
-    pw.TextStyle normal,
-  ) {
-    return pw.Container(
-      child: pw.Column(
-        children: [
-          if (invoice.cgstPercent > 0)
-            _rightAlignedRow(
-                'CGST @ ${invoice.cgstPercent.toStringAsFixed(0)}%',
-                _inr.format(invoice.cgstAmount),
-                normal),
-          if (invoice.sgstPercent > 0)
-            _rightAlignedRow(
-                'SGST @ ${invoice.sgstPercent.toStringAsFixed(0)}%',
-                _inr.format(invoice.sgstAmount),
-                normal),
-          if (invoice.igstPercent > 0)
-            _rightAlignedRow(
-                'IGST @ ${invoice.igstPercent.toStringAsFixed(0)}%',
-                _inr.format(invoice.igstAmount),
-                normal),
-          pw.Container(
-            decoration: const pw.BoxDecoration(
-              border:
-                  pw.Border(top: pw.BorderSide(color: _border, width: 0.5)),
-            ),
-            child: _rightAlignedRow(
-                'Sub Total', _inr.format(invoice.subTotal), bold),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static pw.Widget _buildRecoveries(
-    InvoiceRecord invoice,
-    pw.TextStyle bold,
-    pw.TextStyle normal,
-  ) {
-    if (invoice.tdsPercent == 0 && invoice.retentionPercent == 0) {
-      return pw.SizedBox();
-    }
-
-    return pw.Container(
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Text('Recoveries', style: bold),
-          if (invoice.tdsPercent > 0)
-            _rightAlignedRow(
-                'TDS @ ${invoice.tdsPercent.toStringAsFixed(0)}%',
-                _inr.format(invoice.tdsAmount),
-                normal),
-          if (invoice.retentionPercent > 0)
-            _rightAlignedRow(
-                'Retention Money @ ${invoice.retentionPercent.toStringAsFixed(0)}%',
-                _inr.format(invoice.retentionAmount),
-                normal),
-        ],
-      ),
-    );
-  }
-
-  static pw.Widget _buildTotalInvoiceValue(
-    InvoiceRecord invoice,
-    pw.TextStyle bold,
-    pw.TextStyle normal,
-  ) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(vertical: 8),
-      decoration: const pw.BoxDecoration(
-        border: pw.Border(
-          top: pw.BorderSide(color: _border, width: 1),
-          bottom: pw.BorderSide(color: _border, width: 1),
-        ),
-      ),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text('Total Invoice Value',
-              style: bold.copyWith(fontSize: 11)),
-          pw.Text(_inr.format(invoice.totalInvoiceValue),
-              style: bold.copyWith(fontSize: 11)),
-        ],
-      ),
-    );
-  }
+  // ── Amount in Words ──
 
   static pw.Widget _buildAmountInWords(
     InvoiceRecord invoice,
     pw.TextStyle normal,
     pw.TextStyle bold,
   ) {
-    return pw.Row(
-      children: [
-        pw.Text('In Words: ', style: bold),
-        pw.Text(invoice.amountInWords, style: normal),
-      ],
+    return pw.Container(
+      padding: const pw.EdgeInsets.symmetric(vertical: 4),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(
+          bottom: pw.BorderSide(color: _border, width: 0.5),
+        ),
+      ),
+      child: pw.RichText(
+        text: pw.TextSpan(children: [
+          pw.TextSpan(text: 'In Words : ', style: bold),
+          pw.TextSpan(text: invoice.amountInWords, style: normal),
+        ]),
+      ),
     );
   }
+
+  // ── Footer: Bank + Signature ──
 
   static pw.Widget _buildFooter(
     CompanyProfile? profile,
@@ -451,22 +535,25 @@ class InvoicePdfGenerator {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text('Please remit the Payment to:', style: muted),
+                pw.Text('Bank Details :',
+                    style: bold.copyWith(fontSize: 8)),
                 pw.SizedBox(height: 4),
                 if (profile != null) ...[
-                  pw.Text(
-                      'NAME: M/S ${profile.companyName}', style: normal),
-                  pw.Text('ACC NO: ${profile.accountNo}', style: normal),
-                  pw.Text('BANK: ${profile.bankName}', style: normal),
-                  pw.Text('BRANCH: ${profile.bankBranch}', style: normal),
-                  pw.Text('IFS CODE: ${profile.ifscCode}', style: normal),
+                  pw.Text('NAME : M/S ${profile.companyName}',
+                      style: bold),
+                  pw.SizedBox(height: 1),
+                  pw.Text('ACC NO : ${profile.accountNo}', style: normal),
+                  pw.Text('BANK : ${profile.bankName}', style: normal),
+                  pw.Text('BRANCH : ${profile.bankBranch}', style: normal),
+                  pw.Text('IFS CODE : ${profile.ifscCode}',
+                      style: bold),
                 ] else
                   pw.Text('Bank details not configured', style: muted),
               ],
             ),
           ),
         ),
-        pw.SizedBox(width: 40),
+        pw.SizedBox(width: 30),
         // Signature
         pw.SizedBox(
           width: 160,
@@ -474,23 +561,25 @@ class InvoicePdfGenerator {
             crossAxisAlignment: pw.CrossAxisAlignment.center,
             children: [
               pw.Text(
-                'For ${profile?.companyName ?? "M/S VRS Enterprises"}',
-                style: bold,
+                'For M/S ${profile?.companyName ?? "VRS Enterprises"}',
+                style: bold.copyWith(fontSize: 9),
                 textAlign: pw.TextAlign.center,
               ),
-              pw.SizedBox(height: 8),
+              pw.SizedBox(height: 6),
               if (signature != null)
-                pw.Image(signature, width: 100, height: 50,
+                pw.Image(signature, width: 100, height: 45,
                     fit: pw.BoxFit.contain)
               else
-                pw.SizedBox(height: 50),
-              pw.SizedBox(height: 8),
+                pw.SizedBox(height: 45),
+              pw.SizedBox(height: 6),
               pw.Container(
+                padding: const pw.EdgeInsets.only(top: 3),
                 decoration: const pw.BoxDecoration(
                   border: pw.Border(
                       top: pw.BorderSide(color: _border, width: 0.5)),
                 ),
-                child: pw.Text('Authorized Signatory', style: muted),
+                child: pw.Text('Authorized Signatory',
+                    style: muted.copyWith(fontSize: 7)),
               ),
             ],
           ),
@@ -504,7 +593,7 @@ class InvoicePdfGenerator {
   static pw.Widget _hCell(String text, pw.TextStyle style,
       {pw.Alignment align = pw.Alignment.center}) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 3),
       alignment: align,
       child: pw.Text(text, style: style, textAlign: pw.TextAlign.center),
     );
@@ -513,31 +602,32 @@ class InvoicePdfGenerator {
   static pw.Widget _cell(String text, pw.TextStyle style,
       {pw.Alignment align = pw.Alignment.center}) {
     return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 3),
       alignment: align,
       child: pw.Text(text, style: style),
     );
   }
 
-  static pw.Widget _rightAlignedRow(
-      String label, String value, pw.TextStyle style) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 2),
-      child: pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.end,
-        children: [
-          pw.SizedBox(
-            width: 200,
-            child: pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(label, style: style),
-                pw.Text(value, style: style),
-              ],
-            ),
-          ),
-        ],
-      ),
+  static pw.TableRow _taxRow(
+      String slNo, String label, String amount, pw.TextStyle style) {
+    return pw.TableRow(
+      children: [
+        _cell(slNo, style),
+        _cell('', style),
+        _cell('', style),
+        _cell('', style),
+        _cell('', style),
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+          alignment: pw.Alignment.centerRight,
+          child: pw.Text(label, style: style),
+        ),
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(horizontal: 3, vertical: 3),
+          alignment: pw.Alignment.center,
+          child: pw.Text(amount, style: style),
+        ),
+      ],
     );
   }
 }
