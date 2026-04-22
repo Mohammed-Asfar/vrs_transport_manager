@@ -438,8 +438,11 @@ class _MachineryDetailPageState extends State<MachineryDetailPage> {
                             padding: EdgeInsets.symmetric(vertical: 8),
                             child: Divider(height: 0.5),
                           ),
-                          _financialRow('Diesel',
-                              '₹${record.diesel.toStringAsFixed(0)}',
+                          _financialRow(
+                              'Diesel',
+                              record.billingMode == BillingMode.perLoad
+                                  ? '- ₹${record.diesel.toStringAsFixed(0)}'
+                                  : '₹${record.diesel.toStringAsFixed(0)}',
                               color: AppColors.textSecondary),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 8),

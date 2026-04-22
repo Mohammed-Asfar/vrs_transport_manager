@@ -113,6 +113,13 @@ class _Sidebar extends StatelessWidget {
             onTap: () => context.go('/reports'),
           ),
           _NavItem(
+            icon: Icons.payments_outlined,
+            activeIcon: Icons.payments,
+            label: 'Payments',
+            isActive: location.startsWith('/payments'),
+            onTap: () => context.go('/payments'),
+          ),
+          _NavItem(
             icon: Icons.receipt_long_outlined,
             activeIcon: Icons.receipt_long,
             label: 'Invoices',

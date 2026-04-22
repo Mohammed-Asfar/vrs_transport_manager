@@ -2,6 +2,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:vrs_transport_manager/core/utils/date_formatter.dart';
+import 'package:vrs_transport_manager/features/payment/domain/entities/payment.dart';
 import 'package:vrs_transport_manager/features/reports/domain/entities/report_config.dart';
 import 'package:vrs_transport_manager/features/reports/domain/entities/report_data.dart';
 
@@ -14,10 +15,12 @@ class ReportPdfGenerator {
   static const _headerBg = PdfColor.fromInt(0xFFF2F2F7);
   static const _borderColor = PdfColors.grey300;
   static const _successColor = PdfColor.fromInt(0xFF30D158);
+  static const _warningColor = PdfColor.fromInt(0xFFFF9F0A);
 
   static Future<void> generateAndPrint(
     ReportData data, {
     ExportTarget exportTarget = ExportTarget.transporter,
+    Map<String, List<Payment>> paymentsByTransporter = const {},
   }) async {
     final pdf = pw.Document();
 
@@ -68,7 +71,7 @@ class ReportPdfGenerator {
                 pw.SizedBox(height: 24),
                 _buildOverviewGrid(data.overview, smallBold, small),
                 pw.SizedBox(height: 24),
-                _buildSummaryTable(data, smallBold, small),
+                _buildSummaryTable(data, paymentsByTransporter, smallBold, small, smallMuted),
               ],
             ),
           ),
@@ -87,7 +90,13 @@ class ReportPdfGenerator {
               pw.SizedBox(height: 16),
               _buildGroupTripTable(group, data.config, smallBold, small),
               pw.SizedBox(height: 20),
-              _buildGroupFinancialFooter(group, smallBold, small, smallMuted),
+              _buildGroupFinancialFooter(
+                group,
+                paymentsByTransporter[group.groupKey.trim().toLowerCase()] ?? [],
+                smallBold,
+                small,
+                smallMuted,
+              ),
             ],
           ),
         );
@@ -98,9 +107,10 @@ class ReportPdfGenerator {
         '${DateFormatter.toDisplay(data.config.startDate)}_${DateFormatter.toDisplay(data.config.endDate)}';
     final filePrefix = isCompany ? 'VRS_Company' : 'VRS_Summary';
 
-    await Printing.layoutPdf(
-      onLayout: (format) => pdf.save(),
-      name: '${filePrefix}_$dateRange',
+    final bytes = await pdf.save();
+    await Printing.sharePdf(
+      bytes: bytes,
+      filename: '${filePrefix}_$dateRange.pdf',
     );
   }
 
@@ -218,21 +228,36 @@ class ReportPdfGenerator {
 
   static pw.Widget _buildSummaryTable(
     ReportData data,
+    Map<String, List<Payment>> paymentsByTransporter,
     pw.TextStyle headerStyle,
     pw.TextStyle cellStyle,
+    pw.TextStyle mutedStyle,
   ) {
     const groupLabel = 'Transporter';
+
+    double totalPaidAll = 0;
+    double totalRemainingAll = 0;
+
+    for (final group in data.groups) {
+      final payments =
+          paymentsByTransporter[group.groupKey.trim().toLowerCase()] ?? [];
+      final paid = payments.fold<double>(0, (sum, p) => sum + p.amount);
+      totalPaidAll += paid;
+      totalRemainingAll += group.balance - paid;
+    }
 
     return pw.Table(
       border: pw.TableBorder.all(color: _borderColor, width: 0.5),
       columnWidths: {
         0: const pw.FlexColumnWidth(2.5),
-        1: const pw.FixedColumnWidth(45),
-        2: const pw.FixedColumnWidth(45),
-        3: const pw.FixedColumnWidth(65),
-        4: const pw.FixedColumnWidth(55),
-        5: const pw.FixedColumnWidth(55),
-        6: const pw.FixedColumnWidth(65),
+        1: const pw.FixedColumnWidth(40),
+        2: const pw.FixedColumnWidth(40),
+        3: const pw.FixedColumnWidth(58),
+        4: const pw.FixedColumnWidth(50),
+        5: const pw.FixedColumnWidth(50),
+        6: const pw.FixedColumnWidth(58),
+        7: const pw.FixedColumnWidth(50),
+        8: const pw.FixedColumnWidth(58),
       },
       children: [
         // Header
@@ -246,25 +271,39 @@ class ReportPdfGenerator {
             _tableHeaderCell('Diesel', headerStyle),
             _tableHeaderCell('Advance', headerStyle),
             _tableHeaderCell('Balance', headerStyle),
+            _tableHeaderCell('Paid', headerStyle),
+            _tableHeaderCell('Remaining', headerStyle),
           ],
         ),
         // Data rows
-        ...data.groups.map((group) => pw.TableRow(
-              children: [
-                _tableCell(group.groupKey, cellStyle,
-                    align: pw.Alignment.centerLeft),
-                _tableCell('${group.trips.length}', cellStyle),
-                _tableCell('${group.totalLoads}', cellStyle),
-                _tableCell(
-                    '₹${group.totalAmount.toStringAsFixed(0)}', cellStyle),
-                _tableCell(
-                    '₹${group.dieselShare.toStringAsFixed(0)}', cellStyle),
-                _tableCell(
-                    '₹${group.advanceShare.toStringAsFixed(0)}', cellStyle),
-                _tableCell('₹${group.balance.toStringAsFixed(0)}',
-                    cellStyle.copyWith(color: _accent)),
-              ],
-            )),
+        ...data.groups.map((group) {
+          final payments =
+              paymentsByTransporter[group.groupKey.trim().toLowerCase()] ?? [];
+          final paid = payments.fold<double>(0, (sum, p) => sum + p.amount);
+          final remaining = group.balance - paid;
+
+          return pw.TableRow(
+            children: [
+              _tableCell(group.groupKey, cellStyle,
+                  align: pw.Alignment.centerLeft),
+              _tableCell('${group.trips.length}', cellStyle),
+              _tableCell('${group.totalLoads}', cellStyle),
+              _tableCell(
+                  '₹${group.totalAmount.toStringAsFixed(0)}', cellStyle),
+              _tableCell(
+                  '₹${group.dieselShare.toStringAsFixed(0)}', cellStyle),
+              _tableCell(
+                  '₹${group.advanceShare.toStringAsFixed(0)}', cellStyle),
+              _tableCell('₹${group.balance.toStringAsFixed(0)}',
+                  cellStyle.copyWith(color: _accent)),
+              _tableCell('₹${paid.toStringAsFixed(0)}',
+                  cellStyle.copyWith(color: _successColor)),
+              _tableCell('₹${remaining.toStringAsFixed(0)}',
+                  cellStyle.copyWith(
+                      color: remaining > 0 ? _warningColor : _successColor)),
+            ],
+          );
+        }),
         // Total row
         pw.TableRow(
           decoration: const pw.BoxDecoration(color: _headerBg),
@@ -284,6 +323,13 @@ class ReportPdfGenerator {
             _tableHeaderCell(
                 '₹${data.overview.totalBalance.toStringAsFixed(0)}',
                 headerStyle.copyWith(color: _accent)),
+            _tableHeaderCell(
+                '₹${totalPaidAll.toStringAsFixed(0)}',
+                headerStyle.copyWith(color: _successColor)),
+            _tableHeaderCell(
+                '₹${totalRemainingAll.toStringAsFixed(0)}',
+                headerStyle.copyWith(
+                    color: totalRemainingAll > 0 ? _warningColor : _successColor)),
           ],
         ),
       ],
@@ -422,63 +468,151 @@ class ReportPdfGenerator {
 
   static pw.Widget _buildGroupFinancialFooter(
     ReportGroup group,
+    List<Payment> payments,
     pw.TextStyle boldStyle,
     pw.TextStyle normalStyle,
     pw.TextStyle mutedStyle,
   ) {
-    return pw.Row(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
+    final totalPaid = payments.fold<double>(0, (sum, p) => sum + p.amount);
+    final remaining = group.balance - totalPaid;
+
+    // Sort payments by date
+    final sortedPayments = List<Payment>.from(payments)
+      ..sort((a, b) => a.paymentDate.compareTo(b.paymentDate));
+
+    return pw.Column(
       children: [
-        pw.Expanded(
-          child: pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('Summary',
+                      style: boldStyle.copyWith(fontSize: 10)),
+                  pw.SizedBox(height: 6),
+                  pw.Text('Trips: ${group.trips.length}',
+                      style: normalStyle),
+                  pw.Text('Total Loads: ${group.totalLoads}',
+                      style: normalStyle),
+                ],
+              ),
+            ),
+            pw.SizedBox(
+              width: 220,
+              child: pw.Container(
+                padding: const pw.EdgeInsets.all(12),
+                decoration: pw.BoxDecoration(
+                  color: _headerBg,
+                  borderRadius: pw.BorderRadius.circular(4),
+                  border: pw.Border.all(color: _borderColor, width: 0.5),
+                ),
+                child: pw.Column(
+                  children: [
+                    _summaryRow('Total Amount',
+                        '₹${group.totalAmount.toStringAsFixed(0)}', normalStyle),
+                    pw.SizedBox(height: 6),
+                    _summaryRow('Diesel',
+                        '- ₹${group.dieselShare.toStringAsFixed(0)}', mutedStyle),
+                    pw.SizedBox(height: 6),
+                    _summaryRow('Advance',
+                        '- ₹${group.advanceShare.toStringAsFixed(0)}', mutedStyle),
+                    pw.SizedBox(height: 8),
+                    pw.Container(
+                      padding: const pw.EdgeInsets.only(top: 8),
+                      decoration: const pw.BoxDecoration(
+                        border: pw.Border(
+                            top: pw.BorderSide(color: _borderColor, width: 0.5)),
+                      ),
+                      child: _summaryRow(
+                        'Balance',
+                        '₹${group.balance.toStringAsFixed(0)}',
+                        boldStyle.copyWith(fontSize: 10, color: _accent),
+                      ),
+                    ),
+                    pw.SizedBox(height: 6),
+                    _summaryRow(
+                      'Total Paid',
+                      '₹${totalPaid.toStringAsFixed(0)}',
+                      normalStyle.copyWith(color: _successColor),
+                    ),
+                    pw.SizedBox(height: 6),
+                    pw.Container(
+                      padding: const pw.EdgeInsets.only(top: 8),
+                      decoration: const pw.BoxDecoration(
+                        border: pw.Border(
+                            top: pw.BorderSide(color: _borderColor, width: 0.5)),
+                      ),
+                      child: _summaryRow(
+                        'Remaining',
+                        '₹${remaining.toStringAsFixed(0)}',
+                        boldStyle.copyWith(
+                          fontSize: 12,
+                          color: remaining > 0 ? _warningColor : _successColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        // Payment history table
+        if (sortedPayments.isNotEmpty) ...[
+          pw.SizedBox(height: 16),
+          pw.Text('Payment History',
+              style: boldStyle.copyWith(fontSize: 10)),
+          pw.SizedBox(height: 8),
+          pw.Table(
+            border: pw.TableBorder.all(color: _borderColor, width: 0.5),
+            columnWidths: {
+              0: const pw.FixedColumnWidth(30),
+              1: const pw.FixedColumnWidth(70),
+              2: const pw.FixedColumnWidth(80),
+              3: const pw.FlexColumnWidth(1),
+            },
             children: [
-              pw.Text('Summary',
-                  style: boldStyle.copyWith(fontSize: 10)),
-              pw.SizedBox(height: 6),
-              pw.Text('Trips: ${group.trips.length}',
-                  style: normalStyle),
-              pw.Text('Total Loads: ${group.totalLoads}',
-                  style: normalStyle),
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: _headerBg),
+                children: [
+                  _tableHeaderCell('#', boldStyle),
+                  _tableHeaderCell('Date', boldStyle),
+                  _tableHeaderCell('Amount', boldStyle),
+                  _tableHeaderCell('Remarks', boldStyle),
+                ],
+              ),
+              ...sortedPayments.asMap().entries.map((entry) {
+                final i = entry.key;
+                final p = entry.value;
+                return pw.TableRow(
+                  children: [
+                    _tableCell('${i + 1}', normalStyle),
+                    _tableCell(
+                        DateFormatter.toDisplay(p.paymentDate), normalStyle),
+                    _tableCell('₹${p.amount.toStringAsFixed(0)}',
+                        normalStyle.copyWith(color: _successColor)),
+                    _tableCell(
+                        p.remarks.isEmpty ? '–' : p.remarks, mutedStyle,
+                        align: pw.Alignment.centerLeft),
+                  ],
+                );
+              }),
+              // Total row
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: _headerBg),
+                children: [
+                  _tableCell('', boldStyle),
+                  _tableHeaderCell('Total', boldStyle),
+                  _tableHeaderCell('₹${totalPaid.toStringAsFixed(0)}',
+                      boldStyle.copyWith(color: _successColor)),
+                  _tableCell('', boldStyle),
+                ],
+              ),
             ],
           ),
-        ),
-        pw.SizedBox(
-          width: 200,
-          child: pw.Container(
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              color: _headerBg,
-              borderRadius: pw.BorderRadius.circular(4),
-              border: pw.Border.all(color: _borderColor, width: 0.5),
-            ),
-            child: pw.Column(
-              children: [
-                _summaryRow('Total Amount',
-                    '₹${group.totalAmount.toStringAsFixed(0)}', normalStyle),
-                pw.SizedBox(height: 6),
-                _summaryRow('Diesel',
-                    '- ₹${group.dieselShare.toStringAsFixed(0)}', mutedStyle),
-                pw.SizedBox(height: 6),
-                _summaryRow('Advance',
-                    '- ₹${group.advanceShare.toStringAsFixed(0)}', mutedStyle),
-                pw.SizedBox(height: 8),
-                pw.Container(
-                  padding: const pw.EdgeInsets.only(top: 8),
-                  decoration: const pw.BoxDecoration(
-                    border: pw.Border(
-                        top: pw.BorderSide(color: _borderColor, width: 0.5)),
-                  ),
-                  child: _summaryRow(
-                    'Balance',
-                    '₹${group.balance.toStringAsFixed(0)}',
-                    boldStyle.copyWith(fontSize: 12, color: _accent),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        ],
       ],
     );
   }

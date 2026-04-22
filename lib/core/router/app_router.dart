@@ -26,6 +26,8 @@ import 'package:vrs_transport_manager/features/invoice/presentation/bloc/invoice
 import 'package:vrs_transport_manager/features/invoice/presentation/pages/invoice_form_page.dart';
 import 'package:vrs_transport_manager/features/invoice/presentation/pages/invoice_detail_page.dart';
 import 'package:vrs_transport_manager/features/invoice/presentation/pages/invoice_list_page.dart';
+import 'package:vrs_transport_manager/features/payment/presentation/bloc/payment_bloc.dart';
+import 'package:vrs_transport_manager/features/payment/presentation/pages/payment_list_page.dart';
 import 'package:vrs_transport_manager/features/settings/presentation/bloc/company_profile_bloc.dart';
 import 'package:vrs_transport_manager/features/settings/presentation/pages/settings_page.dart';
 
@@ -98,8 +100,11 @@ class AppRouter {
             path: '/reports',
             pageBuilder: (context, state) => _fadeTransition(
               state,
-              BlocProvider(
-                create: (_) => sl<ReportBloc>(),
+              MultiBlocProvider(
+                providers: [
+                  BlocProvider(create: (_) => sl<ReportBloc>()),
+                  BlocProvider(create: (_) => sl<PaymentBloc>()),
+                ],
                 child: const ReportPage(),
               ),
             ),
@@ -293,6 +298,18 @@ class AppRouter {
                 ),
               );
             },
+          ),
+
+          // ──── Payment Routes ────
+          GoRoute(
+            path: '/payments',
+            pageBuilder: (context, state) => _fadeTransition(
+              state,
+              BlocProvider(
+                create: (_) => sl<PaymentBloc>(),
+                child: const PaymentListPage(),
+              ),
+            ),
           ),
 
           // ──── Settings Route ────

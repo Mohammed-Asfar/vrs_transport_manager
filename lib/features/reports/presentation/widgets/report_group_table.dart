@@ -7,7 +7,18 @@ import 'package:vrs_transport_manager/features/reports/domain/entities/report_da
 class ReportGroupTable extends StatelessWidget {
   final ReportData data;
 
-  const ReportGroupTable({super.key, required this.data});
+  /// Map of normalized transporter name → total amount paid
+  final Map<String, double> paymentsByTransporter;
+
+  /// Called when the user taps "Pay" on a transporter row
+  final void Function(ReportGroup group, double totalPaid)? onPay;
+
+  const ReportGroupTable({
+    super.key,
+    required this.data,
+    this.paymentsByTransporter = const {},
+    this.onPay,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +57,11 @@ class ReportGroupTable extends StatelessWidget {
                   child: Text('Balance',
                       style: AppTextStyles.tableHeader,
                       textAlign: TextAlign.right)),
-              const SizedBox(width: 8),
+              Expanded(
+                  child: Text('Status',
+                      style: AppTextStyles.tableHeader,
+                      textAlign: TextAlign.center)),
+              const SizedBox(width: 64), // pay button space
             ],
           ),
         ),
@@ -56,9 +71,17 @@ class ReportGroupTable extends StatelessWidget {
           child: ListView.builder(
             itemCount: data.groups.length,
             itemBuilder: (context, index) {
+              final group = data.groups[index];
+              final normalizedKey = group.groupKey.trim().toLowerCase();
+              final totalPaid = paymentsByTransporter[normalizedKey] ?? 0;
+
               return _GroupRow(
-                group: data.groups[index],
+                group: group,
                 isLast: index == data.groups.length - 1,
+                totalPaid: totalPaid,
+                onPay: onPay != null
+                    ? () => onPay!(group, totalPaid)
+                    : null,
               );
             },
           ),
@@ -74,10 +97,14 @@ class ReportGroupTable extends StatelessWidget {
 class _GroupRow extends StatefulWidget {
   final ReportGroup group;
   final bool isLast;
+  final double totalPaid;
+  final VoidCallback? onPay;
 
   const _GroupRow({
     required this.group,
     required this.isLast,
+    required this.totalPaid,
+    this.onPay,
   });
 
   @override
@@ -91,6 +118,19 @@ class _GroupRowState extends State<_GroupRow>
 
   @override
   Widget build(BuildContext context) {
+    final balance = widget.group.balance;
+    final totalPaid = widget.totalPaid;
+
+    // Determine payment status
+    final PaymentStatus status;
+    if (totalPaid <= 0) {
+      status = PaymentStatus.unpaid;
+    } else if (totalPaid >= balance) {
+      status = PaymentStatus.paid;
+    } else {
+      status = PaymentStatus.partial;
+    }
+
     return Column(
       children: [
         // Main row
@@ -162,7 +202,33 @@ class _GroupRowState extends State<_GroupRow>
                       textAlign: TextAlign.right,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  // Status chip
+                  Expanded(
+                    child: Center(
+                      child: _StatusChip(status: status),
+                    ),
+                  ),
+                  // Pay button
+                  SizedBox(
+                    width: 64,
+                    child: Center(
+                      child: SizedBox(
+                        height: 26,
+                        child: TextButton(
+                          onPressed: widget.onPay,
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            foregroundColor: AppColors.accent,
+                            textStyle: AppTextStyles.caption
+                                .copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          child: const Text('Pay'),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -174,7 +240,7 @@ class _GroupRowState extends State<_GroupRow>
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeInOut,
           child: _expanded
-              ? _ExpandedTrips(group: widget.group)
+              ? _ExpandedTrips(group: widget.group, totalPaid: totalPaid)
               : const SizedBox.shrink(),
         ),
       ],
@@ -182,10 +248,44 @@ class _GroupRowState extends State<_GroupRow>
   }
 }
 
+enum PaymentStatus { unpaid, partial, paid }
+
+class _StatusChip extends StatelessWidget {
+  final PaymentStatus status;
+
+  const _StatusChip({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final (String label, Color color) = switch (status) {
+      PaymentStatus.unpaid => ('Unpaid', AppColors.error),
+      PaymentStatus.partial => ('Partial', AppColors.warning),
+      PaymentStatus.paid => ('Paid', AppColors.success),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        label,
+        style: AppTextStyles.caption.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+          fontSize: 10,
+        ),
+      ),
+    );
+  }
+}
+
 class _ExpandedTrips extends StatelessWidget {
   final ReportGroup group;
+  final double totalPaid;
 
-  const _ExpandedTrips({required this.group});
+  const _ExpandedTrips({required this.group, required this.totalPaid});
 
   @override
   Widget build(BuildContext context) {
@@ -265,6 +365,16 @@ class _ExpandedTrips extends StatelessWidget {
                     'Advance: ₹${group.advanceShare.toStringAsFixed(0)}',
                     style: AppTextStyles.caption
                         .copyWith(color: AppColors.textTertiary)),
+                if (totalPaid > 0) ...[
+                  const SizedBox(width: 16),
+                  Text(
+                    'Paid: ₹${totalPaid.toStringAsFixed(0)}',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
                 const Spacer(),
                 Text(
                   'Balance: ₹${group.balance.toStringAsFixed(0)}',
@@ -362,7 +472,9 @@ class _TotalsRow extends StatelessWidget {
               textAlign: TextAlign.right,
             ),
           ),
-          const SizedBox(width: 8),
+          // Empty space for status + pay columns
+          const Expanded(child: SizedBox()),
+          const SizedBox(width: 64),
         ],
       ),
     );
