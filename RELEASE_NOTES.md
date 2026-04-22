@@ -1,7 +1,1 @@
-- Added tax invoice feature with GST support (CGST, SGST, IGST) and PDF export
-- Added company profile settings (logo, signature, bank details, GSTIN)
-- Added client management for invoice billing
-- Redesigned invoice PDF template with professional layout
-- PDF now opens save/share dialog instead of print dialog
-- Fixed invoice number incrementing when form is opened without saving
-- Fixed diesel field in machinery records stored as info-only without reducing balance
+Added payment tracking system for transporters, fixed diesel deduction in per-load machinery mode, PDFs now save directly without print dialog
