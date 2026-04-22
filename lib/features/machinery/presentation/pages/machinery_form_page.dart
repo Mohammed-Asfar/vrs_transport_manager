@@ -100,7 +100,9 @@ class _MachineryFormPageState extends State<MachineryFormPage> {
 
   double get _diesel => double.tryParse(_dieselController.text) ?? 0;
   double get _advance => double.tryParse(_advanceController.text) ?? 0;
-  double get _balance => _totalAmount - _advance;
+  double get _balance => _billingMode == BillingMode.perLoad
+      ? _totalAmount - _diesel - _advance
+      : _totalAmount - _advance;
 
   void _onSave() {
     if (!(_formKey.currentState?.validate() ?? false)) return;
@@ -485,7 +487,11 @@ class _MachineryFormPageState extends State<MachineryFormPage> {
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Divider(height: 0.5),
                 ),
-                _summaryRow('Diesel', '₹${_diesel.toStringAsFixed(0)}'),
+                _summaryRow(
+                    'Diesel',
+                    _billingMode == BillingMode.perLoad
+                        ? '- ₹${_diesel.toStringAsFixed(0)}'
+                        : '₹${_diesel.toStringAsFixed(0)}'),
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 8),
                   child: Divider(height: 0.5),

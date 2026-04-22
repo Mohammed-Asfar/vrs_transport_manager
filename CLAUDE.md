@@ -65,6 +65,8 @@ Each feature follows: `data/` (datasources, models, repository impls) → `domai
 - **Collection**: `machinery_records` (ordered by `date` descending) — authenticated users have R/W access
 - **Collection**: `app_config`, document `version` — authenticated users have read-only access (used for update checking)
 - **Field constants**: `core/constants/firestore_constants.dart`
+- **Transport record fields**: `date` (Timestamp), `location` (String), `trips` (Array of maps: vehicleNo, transporter, chainage, km, ratePerKm, amountPerTrip, noOfLoads), `totalLoads`, `totalAmount`, `diesel`, `advance`, `balance`, `createdAt`, `updatedAt`, `createdBy` (Firebase Auth UID)
+- **Security rules**: Only authenticated users can R/W `transport_records` and `machinery_records`; only read `app_config`
 
 ## State Management
 
