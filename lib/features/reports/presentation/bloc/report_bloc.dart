@@ -40,8 +40,11 @@ class ReportBloc extends Bloc<ReportEvent, ReportState> {
     emit(ReportExporting(config: config, data: event.data));
 
     try {
-      await ReportPdfGenerator.generateAndPrint(event.data,
-          exportTarget: event.exportTarget);
+      await ReportPdfGenerator.generateAndPrint(
+        event.data,
+        exportTarget: event.exportTarget,
+        paymentsByTransporter: event.paymentsByTransporter,
+      );
       emit(ReportLoaded(config: config, data: event.data));
     } catch (e) {
       emit(ReportError(config: config, message: 'Failed to generate PDF: $e'));

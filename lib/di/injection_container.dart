@@ -35,6 +35,13 @@ import 'package:vrs_transport_manager/features/invoice/domain/repositories/invoi
 import 'package:vrs_transport_manager/features/invoice/domain/usecases/invoice_usecases.dart';
 import 'package:vrs_transport_manager/features/invoice/presentation/bloc/invoice_bloc.dart';
 
+// Payment
+import 'package:vrs_transport_manager/features/payment/data/datasources/payment_remote_datasource.dart';
+import 'package:vrs_transport_manager/features/payment/data/repositories/payment_repository_impl.dart';
+import 'package:vrs_transport_manager/features/payment/domain/repositories/payment_repository.dart';
+import 'package:vrs_transport_manager/features/payment/domain/usecases/payment_usecases.dart';
+import 'package:vrs_transport_manager/features/payment/presentation/bloc/payment_bloc.dart';
+
 // Settings
 import 'package:vrs_transport_manager/features/settings/data/datasources/company_profile_remote_datasource.dart';
 import 'package:vrs_transport_manager/features/settings/data/repositories/company_profile_repository_impl.dart';
@@ -237,6 +244,38 @@ Future<void> initDependencies() async {
     () => CompanyProfileBloc(
       getProfile: sl<GetCompanyProfileUseCase>(),
       saveProfile: sl<SaveCompanyProfileUseCase>(),
+    ),
+  );
+
+  // ──── Payment Feature ────
+  // Datasource
+  sl.registerLazySingleton<PaymentRemoteDatasource>(
+    () => PaymentRemoteDatasource(sl<FirebaseFirestore>()),
+  );
+
+  // Repository
+  sl.registerLazySingleton<PaymentRepository>(
+    () => PaymentRepositoryImpl(sl<PaymentRemoteDatasource>()),
+  );
+
+  // Use Cases
+  sl.registerLazySingleton(
+      () => GetPaymentsUseCase(sl<PaymentRepository>()));
+  sl.registerLazySingleton(
+      () => GetPaymentsForDateRangeUseCase(sl<PaymentRepository>()));
+  sl.registerLazySingleton(
+      () => CreatePaymentUseCase(sl<PaymentRepository>()));
+  sl.registerLazySingleton(
+      () => DeletePaymentUseCase(sl<PaymentRepository>()));
+
+  // BLoC
+  sl.registerFactory(
+    () => PaymentBloc(
+      getPayments: sl<GetPaymentsUseCase>(),
+      getPaymentsForDateRange: sl<GetPaymentsForDateRangeUseCase>(),
+      createPayment: sl<CreatePaymentUseCase>(),
+      deletePayment: sl<DeletePaymentUseCase>(),
+      repository: sl<PaymentRepository>(),
     ),
   );
 

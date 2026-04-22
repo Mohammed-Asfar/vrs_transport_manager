@@ -2,6 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:vrs_transport_manager/core/theme/app_colors.dart';
 import 'package:vrs_transport_manager/core/theme/app_text_styles.dart';
+import 'package:vrs_transport_manager/di/injection_container.dart';
+import 'package:vrs_transport_manager/features/auth/domain/repositories/auth_repository.dart';
+import 'package:vrs_transport_manager/features/payment/domain/entities/payment.dart';
+import 'package:vrs_transport_manager/features/payment/domain/usecases/payment_usecases.dart';
+import 'package:vrs_transport_manager/features/payment/presentation/bloc/payment_bloc.dart';
+import 'package:vrs_transport_manager/features/payment/presentation/bloc/payment_event.dart';
+import 'package:vrs_transport_manager/features/payment/presentation/bloc/payment_state.dart';
+import 'package:vrs_transport_manager/features/payment/presentation/widgets/payment_dialog.dart';
 import 'package:vrs_transport_manager/features/reports/domain/entities/report_config.dart';
 import 'package:vrs_transport_manager/features/reports/domain/entities/report_data.dart';
 import 'package:vrs_transport_manager/features/reports/presentation/bloc/report_bloc.dart';
@@ -23,6 +31,13 @@ class ReportPage extends StatefulWidget {
 class _ReportPageState extends State<ReportPage> {
   late ReportConfig _config;
   List<String> _availableTransporters = [];
+  Map<String, List<Payment>> _paymentsByTransporter = {};
+
+  /// Computed totals for the table's status indicators
+  Map<String, double> get _paymentTotals => _paymentsByTransporter.map(
+        (key, payments) =>
+            MapEntry(key, payments.fold<double>(0, (sum, p) => sum + p.amount)),
+      );
 
   @override
   void initState() {
@@ -40,28 +55,91 @@ class _ReportPageState extends State<ReportPage> {
 
   void _generate() {
     context.read<ReportBloc>().add(ReportGenerate(_config));
+    _loadPayments();
   }
 
   void _export(ReportData data, ExportTarget target) {
-    context.read<ReportBloc>().add(ReportExportPdf(data, exportTarget: target));
+    context.read<ReportBloc>().add(ReportExportPdf(
+      data,
+      exportTarget: target,
+      paymentsByTransporter: _paymentsByTransporter,
+    ));
+  }
+
+  Future<void> _loadPayments() async {
+    final result = await sl<GetPaymentsForDateRangeUseCase>()(
+      _config.startDate,
+      _config.endDate,
+    );
+    result.fold(
+      (_) {},
+      (payments) {
+        final map = <String, List<Payment>>{};
+        for (final p in payments) {
+          final key = p.transporterNameNormalized;
+          map.putIfAbsent(key, () => []).add(p);
+        }
+        if (mounted) {
+          setState(() => _paymentsByTransporter = map);
+        }
+      },
+    );
+  }
+
+  Future<void> _onPay(ReportGroup group, double totalPaid) async {
+    final currentUser = sl<AuthRepository>().currentUser;
+    final payment = await PaymentDialog.show(
+      context,
+      transporterName: group.groupKey,
+      balance: group.balance,
+      totalPaid: totalPaid,
+      weekStartDate: _config.startDate,
+      weekEndDate: _config.endDate,
+      createdBy: currentUser?.uid,
+    );
+    if (payment != null && mounted) {
+      context.read<PaymentBloc>().add(PaymentCreate(payment));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          _buildToolbar(),
-          Expanded(
-            child: Row(
-              children: [
-                _buildSidebar(),
-                Expanded(child: _buildContent()),
-              ],
+      body: BlocListener<PaymentBloc, PaymentState>(
+        listener: (context, state) {
+          if (state is PaymentOperationSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.success,
+              ),
+            );
+            // Refresh payment data
+            _loadPayments();
+          }
+          if (state is PaymentError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        },
+        child: Column(
+          children: [
+            _buildToolbar(),
+            Expanded(
+              child: Row(
+                children: [
+                  _buildSidebar(),
+                  Expanded(child: _buildContent()),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -364,7 +442,11 @@ class _ReportPageState extends State<ReportPage> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: ReportGroupTable(data: data),
+                child: ReportGroupTable(
+                  data: data,
+                  paymentsByTransporter: _paymentTotals,
+                  onPay: _onPay,
+                ),
               ),
             ),
           ),

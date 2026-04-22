@@ -46,6 +46,16 @@ class FirestoreConstants {
   static const String companyProfile = 'company_profile';
   static const String companyProfileDoc = 'profile';
 
+  // Payment Collection
+  static const String payments = 'payments';
+
+  // Payment Fields
+  static const String transporterName = 'transporterName';
+  static const String amount = 'amount';
+  static const String paymentDate = 'paymentDate';
+  static const String weekStartDate = 'weekStartDate';
+  static const String weekEndDate = 'weekEndDate';
+
   // Machinery Record Fields
   static const String machineName = 'machineName';
   static const String machineNumber = 'machineNumber';
